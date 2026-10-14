@@ -13,11 +13,11 @@ yarn dev           # starts on http://localhost:3000
 
 ## Environments
 
-| Environment | URL |
-|-------------|-----|
-| Local | http://localhost:3000 |
-| Staging | https://stage.amplifyhope.cc |
-| Production | https://amplifyhope.cc |
+| Environment | URL                          |
+| ----------- | ---------------------------- |
+| Local       | http://localhost:3000        |
+| Staging     | https://stage.amplifyhope.cc |
+| Production  | https://amplifyhope.cc       |
 
 The API base URL is set via `NEXT_PUBLIC_API_BASE_URL` at build time.
 
@@ -33,13 +33,13 @@ yarn lint          # ESLint
 
 Deployed via GitLab CI (`.gitlab-ci.yml`). Pipelines are triggered on pushes to `main`.
 
-| Stage | Trigger | What it does |
-|-------|---------|-------------|
-| test | auto | unit tests + Snyk scan |
-| build:staging | auto (main only) | Docker build with staging env vars, push to Docker Hub |
-| deploy:staging | auto (main only) | SSH to stage EC2, pulls image, restarts container |
-| build:production | manual | Docker build with prod env vars, push to Docker Hub |
-| deploy:production | manual | SSH to prod EC2, pulls image, restarts container |
+| Stage             | Trigger          | What it does                                           |
+| ----------------- | ---------------- | ------------------------------------------------------ |
+| test              | auto             | unit tests + Snyk scan                                 |
+| build:staging     | auto (main only) | Docker build with staging env vars, push to Docker Hub |
+| deploy:staging    | auto (main only) | SSH to stage EC2, pulls image, restarts container      |
+| build:production  | manual           | Docker build with prod env vars, push to Docker Hub    |
+| deploy:production | manual           | SSH to prod EC2, pulls image, restarts container       |
 
 Containers run with `--restart unless-stopped` so they survive EC2 reboots.
 
@@ -49,12 +49,12 @@ After each deploy, `docker image prune -af` runs to prevent disk accumulation.
 
 ## Infrastructure
 
-| Resource | Details |
-|----------|---------|
-| Compute | Single EC2 instance per environment (prod + stage), Docker container |
-| Reverse proxy | nginx on the EC2 host, SSL via certbot/Let's Encrypt |
-| Docker images | Docker Hub — `agiannellah/ah-web-ui` |
-| Output | `standalone` mode — self-contained Node.js server (~50–80MB image) |
+| Resource      | Details                                                              |
+| ------------- | -------------------------------------------------------------------- |
+| Compute       | Single EC2 instance per environment (prod + stage), Docker container |
+| Reverse proxy | nginx on the EC2 host, SSL via certbot/Let's Encrypt                 |
+| Docker images | Docker Hub — `agiannellah/ah-web-ui`                                 |
+| Output        | `standalone` mode — self-contained Node.js server (~50–80MB image)   |
 
 ## Architecture
 
@@ -66,12 +66,12 @@ After each deploy, `docker image prune -af` runs to prevent disk accumulation.
 
 ### Key files
 
-| Path | Purpose |
-|------|---------|
-| `app/donate/page.tsx` | Core donation flow |
+| Path                                   | Purpose                                  |
+| -------------------------------------- | ---------------------------------------- |
+| `app/donate/page.tsx`                  | Core donation flow                       |
 | `components/checkout/CheckoutForm.tsx` | Stripe checkout form with fee calculator |
-| `services/checkout.ts` | API client for checkout endpoints |
-| `next.config.js` | Standalone output, Sentry webpack plugin |
+| `services/checkout.ts`                 | API client for checkout endpoints        |
+| `next.config.js`                       | Standalone output, Sentry webpack plugin |
 
 ## Links
 

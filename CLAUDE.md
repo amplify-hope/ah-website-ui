@@ -15,11 +15,13 @@ yarn test:unit    # Mocha unit tests (matches **/*.unit.ts)
 ```
 
 Run a single unit test file:
+
 ```bash
 NODE_ENV=development npx ts-mocha utils/stripe-helpers.unit.ts
 ```
 
 Setup:
+
 ```bash
 nvm install        # installs Node 24 from .nvmrc
 yarn
@@ -32,14 +34,14 @@ cp .env.example .env.local  # fill values from a teammate
 
 ### Directory layout
 
-| Path | Purpose |
-|------|---------|
-| `app/` | Next.js App Router pages and layouts |
-| `components/` | React components, organized by feature (`checkout/`, `auth/`, `layout/`, `common/`) |
-| `services/` | API client functions (thin wrappers over `utils/fetchJson`) |
-| `utils/` | Shared utilities: `fetchJson`, `alerts`, `stripe-helpers`, `get-stripejs`, `validation-schema` |
-| `common/types/` | Shared TypeScript types (`Donation`, `User`, `DonationRequestBody`, etc.) |
-| `config/index.ts` | App-wide constants: `CURRENCY`, `MIN_AMOUNT`, `MAX_AMOUNT`, Stripe fee modifiers |
+| Path              | Purpose                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------- |
+| `app/`            | Next.js App Router pages and layouts                                                           |
+| `components/`     | React components, organized by feature (`checkout/`, `auth/`, `layout/`, `common/`)            |
+| `services/`       | API client functions (thin wrappers over `utils/fetchJson`)                                    |
+| `utils/`          | Shared utilities: `fetchJson`, `alerts`, `stripe-helpers`, `get-stripejs`, `validation-schema` |
+| `common/types/`   | Shared TypeScript types (`Donation`, `User`, `DonationRequestBody`, etc.)                      |
+| `config/index.ts` | App-wide constants: `CURRENCY`, `MIN_AMOUNT`, `MAX_AMOUNT`, Stripe fee modifiers               |
 
 ### Data flow
 
