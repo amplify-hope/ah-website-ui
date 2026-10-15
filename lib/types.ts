@@ -1,3 +1,4 @@
+import { Resend } from 'resend'
 import Stripe from 'stripe'
 
 export type ServerEnv = {
@@ -12,6 +13,16 @@ export type ServerEnv = {
 export type Deps = {
   stripe: Stripe
   env: ServerEnv
+}
+
+// For handlers that also send email.
+export type EmailDeps = Deps & {
+  resend: Resend
+}
+
+export type MagicLinkPayload = {
+  stripeCustomerId: string
+  email: string
 }
 
 // Anything req.json() can produce.

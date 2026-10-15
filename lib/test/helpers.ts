@@ -1,3 +1,4 @@
+import { CreateEmailOptions, CreateEmailResponse, Resend } from 'resend'
 import Stripe from 'stripe'
 import { JsonValue, ServerEnv, StripeCall } from '../types'
 
@@ -54,6 +55,29 @@ export const fakeStripe = (methods: Record<string, FakeMethod>) => {
   }) as Stripe
 
   return { stripe, calls }
+}
+
+type FakeSend = (params: CreateEmailOptions) => Promise<CreateEmailResponse>
+
+// Resend fake that records the emails it was asked to send. Resend resolves
+// with { data, error } instead of throwing on API errors, so the default send
+// succeeds and tests return an error result to simulate a failure.
+export const fakeResend = (
+  send: FakeSend = async () => ({
+    data: { id: 'email_1' },
+    error: null,
+    headers: null
+  })
+) => {
+  const sent: CreateEmailOptions[] = []
+  const emails = {
+    send: async (params: CreateEmailOptions) => {
+      sent.push(params)
+      return send(params)
+    }
+  }
+
+  return { resend: { emails } as Resend, sent }
 }
 
 // The first argument the named Stripe method was called with, typed by the
