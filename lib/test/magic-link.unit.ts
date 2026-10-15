@@ -3,7 +3,8 @@ import jwt from 'jsonwebtoken'
 import {
   buildMagicLink,
   sendMagicLink,
-  signMagicLinkToken
+  signMagicLinkToken,
+  verifyMagicLinkToken
 } from '../magic-link'
 import { fakeResend, testEnv } from './helpers'
 
@@ -34,6 +35,58 @@ describe('#magicLink', () => {
 
       expect(() => jwt.verify(token, 'secret')).to.not.throw()
       expect(() => jwt.verify(token, 'other-secret')).to.throw()
+    })
+  })
+
+  describe('verifyMagicLinkToken', () => {
+    const payload = { stripeCustomerId: 'cus_1', email: 'donor@example.com' }
+    const secret = 'secret'
+
+    it('should return the payload of a token it signed', () => {
+      const token = signMagicLinkToken(payload, secret)
+
+      expect(verifyMagicLinkToken(token, secret)).to.deep.eq(payload)
+    })
+
+    it('should reject an expired token', () => {
+      const token = jwt.sign(payload, secret, { expiresIn: -10 })
+
+      expect(() => verifyMagicLinkToken(token, secret)).to.throw('jwt expired')
+    })
+
+    it('should reject a token signed with a different secret', () => {
+      const token = signMagicLinkToken(payload, 'other-secret')
+
+      expect(() => verifyMagicLinkToken(token, secret)).to.throw()
+    })
+
+    it('should reject a tampered token', () => {
+      const token = signMagicLinkToken(payload, secret)
+      const tampered = `${token.slice(0, -2)}${token.endsWith('aa') ? 'bb' : 'aa'}`
+
+      expect(() => verifyMagicLinkToken(tampered, secret)).to.throw()
+    })
+
+    it('should reject an unsigned token and a token signed with another algorithm', () => {
+      const unsigned = jwt.sign(payload, '', { algorithm: 'none' })
+      const hs512 = jwt.sign(payload, secret, { algorithm: 'HS512' })
+
+      expect(() => verifyMagicLinkToken(unsigned, secret)).to.throw()
+      expect(() => verifyMagicLinkToken(hs512, secret)).to.throw()
+    })
+
+    it('should reject a validly signed token that lacks the expected claims', () => {
+      for (const claims of [
+        { email: 'donor@example.com' },
+        { stripeCustomerId: 'cus_1' },
+        { stripeCustomerId: 1, email: 'donor@example.com' }
+      ]) {
+        const token = jwt.sign(claims, secret)
+
+        expect(() => verifyMagicLinkToken(token, secret)).to.throw(
+          'Invalid magic link token'
+        )
+      }
     })
   })
 

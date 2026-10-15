@@ -12,6 +12,25 @@ export const signMagicLinkToken = (
 ): string =>
   jwt.sign(payload, secret, { algorithm: 'HS256', expiresIn: MAGIC_LINK_TTL })
 
+// Throws if the token is expired, tampered with, signed with a different
+// secret or algorithm, or doesn't carry the claims signMagicLinkToken sets.
+export const verifyMagicLinkToken = (
+  token: string,
+  secret: string
+): MagicLinkPayload => {
+  const claims = jwt.verify(token, secret, { algorithms: ['HS256'] })
+
+  if (
+    typeof claims === 'string' ||
+    typeof claims.stripeCustomerId !== 'string' ||
+    typeof claims.email !== 'string'
+  ) {
+    throw new Error('Invalid magic link token')
+  }
+
+  return { stripeCustomerId: claims.stripeCustomerId, email: claims.email }
+}
+
 // The link goes to this app's own /api/verify route, which redirects to the
 // Stripe billing portal.
 export const buildMagicLink = (env: ServerEnv, token: string): string =>
