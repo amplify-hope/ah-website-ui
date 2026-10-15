@@ -1,6 +1,7 @@
 import * as yup from 'yup'
+import { ServerEnv } from './types'
 
-const serverEnvSchema = yup
+const serverEnvSchema: yup.ObjectSchema<ServerEnv> = yup
   .object({
     STRIPE_SECRET_KEY: yup.string().required(),
     STRIPE_WEBHOOK_SECRET: yup.string().required(),
@@ -10,8 +11,6 @@ const serverEnvSchema = yup
     CLIENT_BASE_URL: yup.string().url().required()
   })
   .required()
-
-export type ServerEnv = yup.InferType<typeof serverEnvSchema>
 
 let cachedEnv: ServerEnv | undefined
 
