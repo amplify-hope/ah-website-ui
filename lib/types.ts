@@ -35,3 +35,5 @@ export type NoParamsContext = { params: Promise<Record<string, never>> }
 export type ProductType = 'one-time' | 'recurring'
 
 export type ProductsContext = { params: Promise<{ type: string }> }
+
+export type CheckoutSessionContext = { params: Promise<{ id: string }> }
