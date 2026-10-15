@@ -17,6 +17,7 @@ test:unit:
   script:
     - yarn
     - yarn test:unit
+    - yarn test:integration
 
 test:snyk:
   stage: test

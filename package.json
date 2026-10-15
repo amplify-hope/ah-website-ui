@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "prepare": "husky install",
     "test:unit": "NODE_ENV=development ts-mocha '**/*.unit.ts'",
+    "test:integration": "NODE_ENV=development ts-mocha '**/*.integration.ts'",
     "typecheck": "tsc --noEmit",
     "version": "echo $npm_package_version"
   },

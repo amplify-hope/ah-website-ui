@@ -31,3 +31,7 @@ export type StripeCall = { method: string; args: StripeArg[] }
 // Context for routes with no dynamic segment. Next requires a route's second
 // parameter to carry `params`, so the default can't be a bare `object`.
 export type NoParamsContext = { params: Promise<Record<string, never>> }
+
+export type ProductType = 'one-time' | 'recurring'
+
+export type ProductsContext = { params: Promise<{ type: string }> }
