@@ -11,7 +11,7 @@
   - The result page shows the fund that was donated to
 - Upgraded Stripe SDK to version 23
 - Added route handler tests (`yarn test:integration`) and run them in the pipeline
-- Deploys read server settings from `~/ah-web-ui.env` on the host
+- Deploys read server settings from `~/.env/.ah-ui.env` on the host
 - Added option to cover Stripe fees on the donation form
 - Donation funds are loaded from Stripe instead of being hardcoded
 - Added Who We Are page

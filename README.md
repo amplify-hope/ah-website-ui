@@ -21,7 +21,7 @@ yarn dev           # starts on http://localhost:3000
 
 The donation API lives in this app under `app/api/*` and is called with same-origin paths, so there is no API base URL.
 
-Server-only variables (`STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`) are read when a request arrives, not at build time. Locally they come from `.env.local`; on the EC2 hosts they come from `~/ah-web-ui.env` (see Deployment).
+Server-only variables (`STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`) are read when a request arrives, not at build time. Locally they come from `.env.local`; on the EC2 hosts they come from `~/.env/.ah-ui.env` (see Deployment).
 
 ## Testing
 
@@ -50,7 +50,7 @@ After each deploy, `docker image prune -af` runs to prevent disk accumulation.
 
 **Note:** Environment variables (`NEXT_PUBLIC_*`) are baked into the image at build time — staging and production require separate build stages with their respective env vars.
 
-Server-only variables are not baked in. Each host keeps them in `~/ah-web-ui.env` (`KEY=value` lines, no quotes, `chmod 600`) and the deploy starts the container with `--env-file ~/ah-web-ui.env`. The deploy job checks the file exists before it stops the running container, so a missing file fails the job instead of taking the site down. `CLIENT_BASE_URL` is that site's own origin, and `JWT_SECRET` must stay the same across deploys or magic links already emailed stop working. This is interim until the move to AWS Amplify (WEB-26).
+Server-only variables are not baked in. Each host keeps them in `~/.env/.ah-ui.env` (`KEY=value` lines, no quotes, `chmod 600`) and the deploy starts the container with `--env-file ~/.env/.ah-ui.env`. The deploy job checks the file exists before it stops the running container, so a missing file fails the job instead of taking the site down. `CLIENT_BASE_URL` is that site's own origin, and `JWT_SECRET` must stay the same across deploys or magic links already emailed stop working. This is interim until the move to AWS Amplify (WEB-26).
 
 ## Infrastructure
 
