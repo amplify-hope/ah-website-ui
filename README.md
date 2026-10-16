@@ -13,19 +13,22 @@ yarn dev           # starts on http://localhost:3000
 
 ## Environments
 
-| Environment | URL                          |
-| ----------- | ---------------------------- |
-| Local       | http://localhost:3000        |
-| Staging     | https://stage.amplifyhope.cc |
-| Production  | https://amplifyhope.cc       |
+| Environment | URL                            |
+| ----------- | ------------------------------ |
+| Local       | <http://localhost:3000>        |
+| Staging     | <https://stage.amplifyhope.cc> |
+| Production  | <https://amplifyhope.cc>       |
 
-The API base URL is set via `NEXT_PUBLIC_API_BASE_URL` at build time.
+The donation API lives in this app under `app/api/*` and is called with same-origin paths, so there is no API base URL.
+
+Server-only variables (`STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`) are read when a request arrives, not at build time. Locally they come from `.env.local`; on the EC2 hosts they come from `~/ah-web-ui.env` (see Deployment).
 
 ## Testing
 
 ```bash
-yarn test:unit     # Mocha unit tests
-yarn typecheck     # tsc --noEmit
+yarn test:unit         # Mocha unit tests
+yarn test:integration  # Route Handler tests with fake Stripe and Resend clients
+yarn typecheck         # tsc --noEmit
 yarn lint          # ESLint
 ```
 
@@ -35,7 +38,7 @@ Deployed via GitLab CI (`.gitlab-ci.yml`). Pipelines are triggered on pushes to 
 
 | Stage             | Trigger          | What it does                                           |
 | ----------------- | ---------------- | ------------------------------------------------------ |
-| test              | auto             | unit tests + Snyk scan                                 |
+| test              | auto             | unit + integration tests, Snyk scan                    |
 | build:staging     | auto (main only) | Docker build with staging env vars, push to Docker Hub |
 | deploy:staging    | auto (main only) | SSH to stage EC2, pulls image, restarts container      |
 | build:production  | manual           | Docker build with prod env vars, push to Docker Hub    |
@@ -46,6 +49,8 @@ Containers run with `--restart unless-stopped` so they survive EC2 reboots.
 After each deploy, `docker image prune -af` runs to prevent disk accumulation.
 
 **Note:** Environment variables (`NEXT_PUBLIC_*`) are baked into the image at build time — staging and production require separate build stages with their respective env vars.
+
+Server-only variables are not baked in. Each host keeps them in `~/ah-web-ui.env` (`KEY=value` lines, no quotes, `chmod 600`) and the deploy starts the container with `--env-file ~/ah-web-ui.env`. The deploy job checks the file exists before it stops the running container, so a missing file fails the job instead of taking the site down. `CLIENT_BASE_URL` is that site's own origin, and `JWT_SECRET` must stay the same across deploys or magic links already emailed stop working. This is interim until the move to AWS Amplify (WEB-26).
 
 ## Infrastructure
 
@@ -70,7 +75,9 @@ After each deploy, `docker image prune -af` runs to prevent disk accumulation.
 | -------------------------------------- | ---------------------------------------- |
 | `app/donate/page.tsx`                  | Core donation flow                       |
 | `components/checkout/CheckoutForm.tsx` | Stripe checkout form with fee calculator |
-| `services/checkout.ts`                 | API client for checkout endpoints        |
+| `app/api/*/route.ts`                   | Route Handlers (thin adapters)           |
+| `lib/handlers/*.ts`                    | Route logic, tested in `lib/test/`       |
+| `services/*.ts`                        | Browser clients for the same-origin API  |
 | `next.config.js`                       | Standalone output, Sentry webpack plugin |
 
 ## Links

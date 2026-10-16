@@ -1,5 +1,5 @@
-import { Resend } from 'resend'
-import Stripe from 'stripe'
+import type { Resend } from 'resend'
+import type Stripe from 'stripe'
 
 export type ServerEnv = {
   STRIPE_SECRET_KEY: string
@@ -43,6 +43,17 @@ export type StripeCall = { method: string; args: StripeArg[] }
 export type NoParamsContext = { params: Promise<Record<string, never>> }
 
 export type ProductType = 'one-time' | 'recurring'
+
+// What GET /api/products/[type] returns.
+export type Product = {
+  stripeId: string
+  productName: string
+  productType: ProductType
+}
+
+export type ProductsResponse = {
+  products: Product[]
+}
 
 export type ProductsContext = { params: Promise<{ type: string }> }
 

@@ -1,7 +1,8 @@
-import axios from 'axios'
 import { DonationRequestBody, IntervalOptions } from 'common/types'
 import { ErrorMessage, Field, Form, Formik, FormikHelpers } from 'formik'
+import { ProductType } from 'lib/types'
 import { useState } from 'react'
+import { getProducts } from 'services/products'
 import useSWR from 'swr'
 import fetchJson from 'utils/fetchJson'
 import getStripe from 'utils/get-stripejs'
@@ -17,16 +18,6 @@ import * as config from '../../config'
 
 type CheckoutFormProps = {
   isRecurring: boolean
-}
-
-type Product = {
-  stripeId: string
-  productName: string
-  productType: 'one-time' | 'recurring'
-}
-
-type ProductsResponse = {
-  products: Product[]
 }
 
 type FormValues = {
@@ -49,13 +40,13 @@ const intervalOptions: IntervalOptions[] = [
 export const CheckoutForm = (props: CheckoutFormProps) => {
   const { isRecurring } = props
   const [loading, setLoading] = useState<boolean>(false)
+  const productType: ProductType = isRecurring ? 'recurring' : 'one-time'
   const {
     data: fundOptions,
     error,
     isLoading
-  } = useSWR(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/${isRecurring ? 'recurring' : 'one-time'}`,
-    url => axios.get<ProductsResponse>(url).then(res => res.data)
+  } = useSWR(['products', productType] as const, ([, type]) =>
+    getProducts(type)
   )
 
   if (isLoading) return <div>Loading...</div>
@@ -97,20 +88,23 @@ export const CheckoutForm = (props: CheckoutFormProps) => {
             isRecurring
           }
 
-          const response = await fetchJson(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/checkout`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(requestBody)
-            }
-          )
+          const response = await fetchJson('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+          })
+
+          if (!response) {
+            setLoading(false)
+            setSubmitting(false)
+            return
+          }
 
           const stripe = await getStripe()
           const { error } = await stripe!.redirectToCheckout({
             sessionId: response.id
           })
-          console.warn(error.message)
+          if (error) console.warn(error.message)
           setLoading(false)
           setSubmitting(false)
         }}

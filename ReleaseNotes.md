@@ -1,5 +1,28 @@
 # Amplify Hope Website Release Notes
 
+## v2.8.0
+
+- Consolidated the API into this app
+  - Checkout, products, checkout sessions, sign in and email verification now run as Next.js route handlers under `/api`
+  - The site no longer calls the separate API project
+  - Removed the Stripe webhook and the unauthenticated portal session route
+  - Invalid checkout requests return a 400 instead of a 500
+  - Checkout redirect URLs come from `CLIENT_BASE_URL` instead of the request origin
+  - The result page shows the fund that was donated to
+- Upgraded Stripe SDK to version 23
+- Added route handler tests (`yarn test:integration`) and run them in the pipeline
+- Deploys read server settings from `~/ah-web-ui.env` on the host
+- Added option to cover Stripe fees on the donation form
+- Donation funds are loaded from Stripe instead of being hardcoded
+- Added Who We Are page
+- Updated address and made the copyright year dynamic
+- Fixed favicon and result page build
+- Updated Sentry integration and reduced trace sampling
+- Upgraded Node.JS to version 24
+- Upgraded dependencies and pinned versions to resolve security vulnerabilities
+- Added container restart policy and image cleanup to deploys
+- Added CLAUDE.md and expanded the README
+
 ## v2.7.1
 
 - Upgraded dependencies

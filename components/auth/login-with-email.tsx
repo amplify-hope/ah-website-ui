@@ -31,7 +31,7 @@ export const LoginWithEmailForm = () => {
             email: formValues.email
           }
 
-          await fetchJson(`${process.env.NEXT_PUBLIC_API_BASE_URL}/login`, {
+          await fetchJson('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody)
