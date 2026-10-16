@@ -47,7 +47,7 @@ Run this before a release, and after changing checkout, login or verify. Stripe 
    - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY` (sandbox keys)
    - `JWT_SECRET` (any string for local use)
    - `RESEND_API_KEY`, `RESEND_TEMPLATE_ID` (the magic-link email is sent through Resend with this key, so use an address you control)
-   - `CLIENT_BASE_URL=http://localhost:3000`
+   - `CLIENT_BASE_URL=http://localhost:3000` (any http or https origin works, `localhost` included)
 3. Create products with `metadata.type` set to `one-time` or `recurring`. Names look like `General Fund|one-time`; the part before the pipe is the fund shown on the form and on the result page.
 4. `yarn dev`
 
@@ -57,17 +57,18 @@ Run this before a release, and after changing checkout, login or verify. Stripe 
 
 Use a different test card for each independent scenario, since card-level state persists between tests. Use any future expiry and any CVC.
 
-| Scenario                     | How                                                                                 | Expect                                                                      |
-| ---------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| One-time donation            | Donate with `4242 4242 4242 4242`                                                   | Result page shows the amount and fund; payment succeeded in the Dashboard   |
-| Declined card                | `4000 0000 0000 0002` (generic decline), `4000 0000 0000 9995` (insufficient funds) | Stripe Checkout shows the decline; no payment                               |
-| 3D Secure                    | `4000 0027 6000 3184`                                                               | 3DS challenge appears; completing it succeeds                               |
-| Monthly, quarterly, yearly   | Donate recurring with each interval                                                 | Subscription created; quarterly shows as every 3 months                     |
-| Returning donor              | Donate twice with the same email                                                    | Second session attaches the existing customer instead of creating a new one |
-| Price reuse                  | Repeat an identical amount                                                          | The existing price (lookup key) is reused, not duplicated                   |
-| Magic-link login             | Use a donor's email on `/auth/signin`, open the emailed link                        | Redirects to the Stripe billing portal; the link expires after 10 minutes   |
-| Unknown email / expired link | Sign in with an unknown email; open a link after 10 minutes, or edit the token      | 404 on login; 401 on verify                                                 |
-| Simulated location           | Use an email like `test+location_US@example.com`                                    | Checkout behaves as if the donor were in that country                       |
+| Scenario                     | How                                                                                 | Expect                                                                       |
+| ---------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| One-time donation            | Donate with `4242 4242 4242 4242`                                                   | Result page shows the amount and fund; payment succeeded in the Dashboard    |
+| Declined card                | `4000 0000 0000 0002` (generic decline), `4000 0000 0000 9995` (insufficient funds) | Stripe Checkout shows the decline; no payment                                |
+| 3D Secure                    | `4000 0027 6000 3184`                                                               | 3DS challenge appears; completing it succeeds                                |
+| Monthly, quarterly, yearly   | Donate recurring with each interval                                                 | Subscription created; quarterly shows as every 3 months                      |
+| New donor                    | Donate one-time with an email Stripe has not seen                                   | A customer is created for the email, so the QuickBooks sync sees a new donor |
+| Returning donor              | Start a second donation with the same email (no need to pay)                        | The session carries `customer` instead of `customer_email`                   |
+| Price reuse                  | Repeat an identical amount                                                          | The existing price (lookup key) is reused, not duplicated                    |
+| Magic-link login             | Use a donor's email on `/auth/signin`, open the emailed link                        | Redirects to the Stripe billing portal; the link expires after 10 minutes    |
+| Unknown email / expired link | Sign in with an unknown email; open a link after 10 minutes, or edit the token      | 404 on login; 401 on verify                                                  |
+| Simulated location           | Use an email like `test+location_US@example.com`                                    | Checkout behaves as if the donor were in that country                        |
 
 ### Recurring renewals (no webhook)
 
