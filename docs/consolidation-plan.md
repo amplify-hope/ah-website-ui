@@ -83,7 +83,8 @@ Route-level tests for the ported routes now ship with each route in WEB-22 (see 
 - [x] D4. Integration tests for `/api/login`: known Stripe customer → 204, unknown email → 404, validation, Resend and Stripe failures. Delivered in WEB-22
 - [x] D5. Integration tests for `/api/verify`: valid token → redirect to the Billing Portal; expired, tampered, wrong-secret, wrong-algorithm and unsigned tokens → 401. Delivered in WEB-22
 - [x] D6. Reconcile the existing `stripe-helpers.unit.ts` test with the consolidated helper from A4. Delivered in WEB-21
-- [ ] D7. Run the sandbox end-to-end pass from `docs/stripe-testing.md`, including a test-clock renewal that finalizes without a webhook. Optionally replace the hand-built Stripe fixtures with scrubbed recordings from a sandbox
+- [x] D7. Run the sandbox end-to-end pass from `docs/stripe-testing.md`, including a test-clock renewal that finalizes without a webhook. Ran against a local `yarn dev` and `stage.amplifyhope.cc`, both on the Stripe sandbox: products, one-time and month, quarter and year checkout (price reuse, customer reuse), declined cards and 3D Secure on Stripe Checkout, the result page, login and verify (including the 401 and 404 paths), and a test-clock renewal that went to `paid` with no webhook. The fixtures were not replaced with recordings
+- [x] D8. Fixes found by the pass: `CLIENT_BASE_URL` rejected `http://localhost:3000` (Yup `url()` needs a TLD), an unknown checkout session returned a 500 instead of a 404, and new one-time donors were not saved as Stripe customers (not since the API moved to Stripe API version 2023-10-16 in March 2024), so the Stripe to QuickBooks sync missed them. Released as v2.8.1
 
 ### [WEB-25] Security & cleanup
 
