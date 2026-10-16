@@ -13,11 +13,11 @@ yarn dev           # starts on http://localhost:3000
 
 ## Environments
 
-| Environment | URL                          |
-| ----------- | ---------------------------- |
-| Local       | http://localhost:3000        |
-| Staging     | https://stage.amplifyhope.cc |
-| Production  | https://amplifyhope.cc       |
+| Environment | URL                            |
+| ----------- | ------------------------------ |
+| Local       | <http://localhost:3000>        |
+| Staging     | <https://stage.amplifyhope.cc> |
+| Production  | <https://amplifyhope.cc>       |
 
 The donation API lives in this app under `app/api/*` and is called with same-origin paths, so there is no API base URL.
 
