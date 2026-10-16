@@ -1,5 +1,12 @@
 # Amplify Hope Website Release Notes
 
+## v2.8.1
+
+- New one-time donors are now saved as Stripe customers again, so they sync to QuickBooks
+  - One-time donors have not been saved as customers since March 2024
+- Looking up a checkout session that does not exist returns a 404 instead of a 500
+- Fixed local development rejecting `http://localhost:3000` as `CLIENT_BASE_URL`
+
 ## v2.8.0
 
 - Consolidated the API into this app
