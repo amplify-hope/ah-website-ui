@@ -1,23 +1,9 @@
 import { expect } from 'chai'
 import { getCheckoutSession } from '../checkout'
-
-type FetchCall = { url: string; init?: RequestInit }
+import { restoreFetch, stubFetch } from './helpers'
 
 describe('#checkout service', () => {
-  const originalFetch = globalThis.fetch
-  let calls: FetchCall[] = []
-
-  const stubFetch = (response: Response) => {
-    calls = []
-    globalThis.fetch = async (input, init) => {
-      calls.push({ url: String(input), init })
-      return response
-    }
-  }
-
-  afterEach(() => {
-    globalThis.fetch = originalFetch
-  })
+  afterEach(restoreFetch)
 
   describe('getCheckoutSession', () => {
     const session = {
@@ -28,7 +14,7 @@ describe('#checkout service', () => {
     }
 
     it('should fetch the session from the same-origin checkout-sessions route', async () => {
-      stubFetch(Response.json(session))
+      const calls = stubFetch(Response.json(session))
 
       const result = await getCheckoutSession('cs_test_1')
 
