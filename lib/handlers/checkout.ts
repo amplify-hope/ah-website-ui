@@ -93,7 +93,10 @@ export const handleCheckout = async (
   const session = await stripe.checkout.sessions.create({
     ...(existingCustomer
       ? { customer: existingCustomer.id }
-      : { customer_email: email }),
+      : {
+          customer_email: email,
+          ...(!isRecurring && { customer_creation: 'always' as const })
+        }),
     mode: isRecurring ? 'subscription' : 'payment',
     line_items: [{ price: price.id, quantity: 1 }],
     billing_address_collection: 'required',
