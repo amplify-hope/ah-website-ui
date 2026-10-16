@@ -42,33 +42,36 @@ Tracked in Jira as Stories under Epic [WEB-20](https://amplifyhope.atlassian.net
 
 ### [WEB-21] Foundations & Config
 
-- [ ] A1. Add a server-only env var module (e.g. `lib/env.ts`, Yup-validated, consistent with the existing Formik/Yup usage) for `STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`. Drop obsolete backend vars: `DBHOST/DBUSER/DBDATABASE/DBPASSWORD/DBPORT`, `NEW_RELIC_APP_NAME/NEW_RELIC_LICENSE_KEY` (confirmed unused in source), `API_BASE_URL`, and `STRIPE_RECURRING_PRODUCT_ID` (confirmed unused: defined in `ah-website-api` config/types/`.env.example` but never read). No webhook secret is needed: the webhook is not being ported.
-- [ ] A2. Add new dependencies: `jsonwebtoken`, `@types/jsonwebtoken`, `resend`. **Upgrade `stripe` from ^17.7.0 to ^23.0.0** to match `ah-website-api` (the two repos do not currently match). v23 only exports `Stripe` as a type from the named import, so use `import Stripe from 'stripe'`. Do not bump `@stripe/stripe-js`.
-- [ ] A3. Create a shared server-side Stripe client singleton (e.g. `utils/stripe-server.ts`), replacing the per-controller `new Stripe(...)` pattern from `ah-website-api`.
-- [ ] A4. Consolidate the duplicated fee logic: backend's `formatAmountForStripe` and frontend's `calculateStripeFees` (`utils/stripe-helpers.ts`) into one canonical implementation. Extend the existing unit test (`utils/test/stripe-helpers.unit.ts`) with the backend's `formatAmountForStripe(1.239, 'usd') -> 124` case.
-- [ ] A5. **Deferred to WEB-23 (do after C4).** Trim `common/types/index.ts`: remove `Donation`/`User` fields that only existed to support the dead donations feature, once `services/donations.ts` is deleted and no usages remain.
+- [x] A1. Add a server-only env var module (e.g. `lib/env.ts`, Yup-validated, consistent with the existing Formik/Yup usage) for `STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`. Drop obsolete backend vars: `DBHOST/DBUSER/DBDATABASE/DBPASSWORD/DBPORT`, `NEW_RELIC_APP_NAME/NEW_RELIC_LICENSE_KEY` (confirmed unused in source), `API_BASE_URL`, and `STRIPE_RECURRING_PRODUCT_ID` (confirmed unused: defined in `ah-website-api` config/types/`.env.example` but never read). No webhook secret is needed: the webhook is not being ported.
+- [x] A2. Add new dependencies: `jsonwebtoken`, `@types/jsonwebtoken`, `resend`. **Upgrade `stripe` from ^17.7.0 to ^23.0.0** to match `ah-website-api` (the two repos do not currently match). v23 only exports `Stripe` as a type from the named import, so use `import Stripe from 'stripe'`. Do not bump `@stripe/stripe-js`.
+- [x] A3. Create a shared server-side Stripe client singleton (e.g. `utils/stripe-server.ts`), replacing the per-controller `new Stripe(...)` pattern from `ah-website-api`.
+- [x] A4. Consolidate the duplicated fee logic: backend's `formatAmountForStripe` and frontend's `calculateStripeFees` (`utils/stripe-helpers.ts`) into one canonical implementation. Extend the existing unit test (`utils/test/stripe-helpers.unit.ts`) with the backend's `formatAmountForStripe(1.239, 'usd') -> 124` case.
+- [x] A5. Trim `common/types/index.ts`: remove `Donation`/`User`, which only existed to support the dead donations feature. Done in WEB-23 once `services/donations.ts` was deleted
 
 ### [WEB-22] Port API routes into Next.js Route Handlers
 
 Each route is a thin `route.ts` plus a `lib/handlers/<name>.ts` function, and **ships with its own route-level tests** (`*.integration.ts`, run with `yarn test:integration`) using injected fake Stripe and Resend clients. See `docs/stripe-testing.md`.
 
-- [ ] B1. `app/api/products/[type]/route.ts` (GET) — port `getProducts` (live Stripe product search by metadata). **Validate `:type` against an allow-list** before using it in the Stripe `products.search` query (the Express handler currently interpolates it unvalidated)
-- [ ] B2. `app/api/checkout/route.ts` (POST) — port `postCheckoutSession` (amount validation, price lookup/create, checkout session create). Return 403 when a recurring donation has no interval (matches the recent API fix; the old `return res.status(403)` never sent a response)
-- [ ] B3. `app/api/checkout-sessions/[id]/route.ts` (GET) — port `getCheckoutSessionById`
+- [x] B1. `app/api/products/[type]/route.ts` (GET) — port `getProducts` (live Stripe product search by metadata). **Validate `:type` against an allow-list** before using it in the Stripe `products.search` query (the Express handler currently interpolates it unvalidated)
+- [x] B2. `app/api/checkout/route.ts` (POST) — port `postCheckoutSession` (amount validation, price lookup/create, checkout session create). Return 403 when a recurring donation has no interval (matches the recent API fix; the old `return res.status(403)` never sent a response)
+- [x] B3. `app/api/checkout-sessions/[id]/route.ts` (GET) — port `getCheckoutSessionById`
 - [ ] B4. ~~`create-portal-session`~~ **Dropped.** The route was unauthenticated and nothing calls it; the portal is reached through login + verify (B5/B6)
-- [ ] B5. `app/api/login/route.ts` (POST) — port `loginHandler` + `sendMagicLink` (Resend email). The email is validated first; a Stripe failure returns 500 (Express was missing a `return` and crashed); Resend's `{ error }` result is checked so a failed send returns 500 instead of 204; the link is `${CLIENT_BASE_URL}/api/verify?token=`; the email's `environment` tag uses `NEXT_PUBLIC_APP_ENV` since `NODE_ENV` is `production` for both staging and production
-- [ ] B6. `app/api/verify/route.ts` (GET) — port `verifyMagicLink` (JWT verify → Stripe Billing Portal session → 302 redirect). The token is pinned to HS256 and must carry the login claims; an invalid, expired or tampered token returns 401 (Express hung); a deleted or missing customer returns 401 (Express sent nothing); other Stripe failures return 500; the portal `return_url` is `CLIENT_BASE_URL`
+- [x] B5. `app/api/login/route.ts` (POST) — port `loginHandler` + `sendMagicLink` (Resend email). The email is validated first; a Stripe failure returns 500 (Express was missing a `return` and crashed); Resend's `{ error }` result is checked so a failed send returns 500 instead of 204; the link is `${CLIENT_BASE_URL}/api/verify?token=`; the email's `environment` tag uses `NEXT_PUBLIC_APP_ENV` since `NODE_ENV` is `production` for both staging and production
+- [x] B6. `app/api/verify/route.ts` (GET) — port `verifyMagicLink` (JWT verify → Stripe Billing Portal session → 302 redirect). The token is pinned to HS256 and must carry the login claims; an invalid, expired or tampered token returns 401 (Express hung); a deleted or missing customer returns 401 (Express sent nothing); other Stripe failures return 500; the portal `return_url` is `CLIENT_BASE_URL`
 - [ ] B7. ~~`app/api/stripe-webhooks/route.ts`~~ **Dropped.** Its only effect was finalizing recurring invoices, which Stripe does on its own about an hour later, and the production endpoint is already disabled; the other branches only logged and the DB sync is gone. See the WEB-20 decision log
 - [ ] B8. ~~`/health` and `/debug-sentry`~~ **Dropped.** `/health` only checked the database, and Amplify provides platform-level health monitoring; Sentry has its own verification tooling
 - [ ] B9. ~~Remove the `cors` package/middleware~~ **N/A.** `cors` only exists in `ah-website-api`; all calls here are same-origin
 
 ### [WEB-23] Frontend rewiring to same-origin API calls
 
-- [ ] C1. Replace every `NEXT_PUBLIC_API_BASE_URL` call with a relative `/api/...` path: `components/auth/login-with-email.tsx`, `components/checkout/CheckoutForm.tsx` (both the SWR fetch and the POST), `services/checkout.ts`
-- [ ] C2. Standardize `CheckoutForm.tsx`'s SWR fetcher on `fetchJson` instead of `axios`; drop the `axios` dependency if nothing else uses it
-- [ ] C3. Fix the latent bug in `CheckoutForm.tsx` (~line 113): guard against `error` being `undefined` after a successful `redirectToCheckout` before reading `error.message`
-- [ ] C4. Delete `services/donations.ts` and confirm no remaining imports
-- [ ] C5. Remove `NEXT_PUBLIC_API_BASE_URL` from `.env.example`, `config/`, and any remaining references
+Known gaps, not changed here: no alert UI exists, so `fetchJson` failures are silent; the sign-in form always goes to the check-your-email page; the result page shows "$NaN" if its session fetch fails.
+
+- [x] C1. Replace every `NEXT_PUBLIC_API_BASE_URL` call with a relative `/api/...` path: `components/auth/login-with-email.tsx`, `components/checkout/CheckoutForm.tsx` (both the SWR fetch and the POST), `services/checkout.ts`
+- [x] C2. Standardize `CheckoutForm.tsx`'s SWR fetcher on `fetchJson` instead of `axios`, through the new `services/products.ts`, which throws on failure so SWR's `error` still fires (`fetchJson` never throws). `axios` is removed
+- [x] C3. Fix the latent bug in `CheckoutForm.tsx`: stop and reset the form when the checkout request fails instead of calling Stripe with an undefined session id, and only read `error.message` when `redirectToCheckout` returned an error
+- [x] C4. Delete `services/donations.ts` (nothing imported it)
+- [x] C5. Remove `NEXT_PUBLIC_API_BASE_URL` from `.env.example`, the `Dockerfile` and the CI build commands (`config/` never referenced it). Delete the CI/CD variable in GitLab separately
+- [x] C6. Pass server-only env to the deployed container: both deploy jobs start it with `--env-file ~/ah-web-ui.env` and exit before stopping the running container if the file is missing. Create the file on each host (`STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`; `KEY=value`, no quotes) before merging. Interim until WEB-26
 
 ### [WEB-24] Testing: route-level integration coverage
 
@@ -93,7 +96,7 @@ Route-level tests for the ported routes now ship with each route in WEB-22 (see 
 - [ ] F1. Provision an AWS Amplify Hosting app connected to the `ah-website-ui` GitLab.com repo
 - [ ] F2. Configure branch/environment mapping mirroring today's gate: `main` → staging (auto-deploy), a manual-promote step or protected branch → production
 - [ ] F3. Write `amplify.yml` build spec: install → lint → typecheck → `test:unit` → `test:integration` → build
-- [ ] F4. Migrate environment variables into Amplify Console per branch: existing `NEXT_PUBLIC_*` vars plus new server secrets (`STRIPE_SECRET_KEY`, `JWT_SECRET` — must carry over the exact current value so in-flight magic links don't break —, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`)
+- [ ] F4. Migrate environment variables into Amplify Console per branch: existing `NEXT_PUBLIC_*` vars plus new server secrets (`STRIPE_SECRET_KEY`, `JWT_SECRET` — must carry over the exact current value so in-flight magic links don't break —, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`) Until then the Docker hosts read the same variables from `~/ah-web-ui.env`.
 - [ ] F5. Spike: verify `next.config.js`'s `output: 'standalone'` setting (Docker-specific) against Amplify's Next.js compute integration; adjust as needed before porting all routes
 - [ ] F6. Configure custom domain + managed SSL in Amplify, replacing certbot/nginx on the old EC2 host
 - [ ] F7. Decide and implement the final shape of `.gitlab-ci.yml`: reduce to lint/test-only gates (recommended) or retire in favor of `amplify.yml` running everything

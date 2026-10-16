@@ -9,15 +9,16 @@ yarn dev          # start dev server with Turbopack on http://localhost:3000
 yarn build        # production build
 yarn start        # run the production server locally
 yarn lint         # ESLint
-yarn format       # Prettier (write)
+yarn format       # Prettier --write on the whole repo; to only check, `npx prettier --check <paths>`
 yarn typecheck    # tsc --noEmit
 yarn test:unit    # Mocha unit tests (matches **/*.unit.ts)
+yarn test:integration  # Mocha Route Handler tests (matches **/*.integration.ts)
 ```
 
 Run a single unit test file:
 
 ```bash
-NODE_ENV=development npx ts-mocha utils/stripe-helpers.unit.ts
+NODE_ENV=development npx ts-mocha utils/test/stripe-helpers.unit.ts
 ```
 
 Setup:
@@ -34,22 +35,23 @@ cp .env.example .env.local  # fill values from a teammate
 
 ### Directory layout
 
-| Path              | Purpose                                                                                        |
-| ----------------- | ---------------------------------------------------------------------------------------------- |
-| `app/`            | Next.js App Router pages and layouts                                                           |
-| `components/`     | React components, organized by feature (`checkout/`, `auth/`, `layout/`, `common/`)            |
-| `services/`       | API client functions (thin wrappers over `utils/fetchJson`)                                    |
-| `utils/`          | Shared utilities: `fetchJson`, `alerts`, `stripe-helpers`, `get-stripejs`, `validation-schema` |
-| `common/types/`   | Shared TypeScript types (`Donation`, `User`, `DonationRequestBody`, etc.)                      |
-| `config/index.ts` | App-wide constants: `CURRENCY`, `MIN_AMOUNT`, `MAX_AMOUNT`, Stripe fee modifiers               |
+| Path              | Purpose                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `app/`            | Next.js App Router pages and layouts; `app/api/*/route.ts` are the Route Handlers (one-line adapters)                                      |
+| `components/`     | React components, organized by feature (`checkout/`, `auth/`, `layout/`, `common/`)                                                        |
+| `services/`       | Browser clients for the same-origin API (`checkout`, `products`), thin wrappers over `utils/fetchJson`                                     |
+| `lib/`            | Server code: `handlers/` (route logic), `deps.ts` (`serve`), `env.ts`, `magic-link.ts`, `donation.ts`; `types.ts` holds the exported types |
+| `utils/`          | Shared utilities: `fetchJson`, `alerts`, `stripe-helpers`, `get-stripejs`, `validation-schema`                                             |
+| `common/types/`   | Request-body types shared by client and server (`DonationRequestBody`, `LoginWithEmailRequestBody`, `IntervalOptions`)                     |
+| `config/index.ts` | App-wide constants: `CURRENCY`, `MIN_AMOUNT`, `MAX_AMOUNT`, Stripe fee modifiers                                                           |
 
 ### Data flow
 
 1. Pages in `app/` compose components from `components/`
-2. `CheckoutForm` (the core donation UI) calls `NEXT_PUBLIC_API_BASE_URL` endpoints directly via `utils/fetchJson`
-3. `utils/fetchJson` integrates with `utils/alerts` (RxJS Subject-based) to surface success/error toasts automatically
+2. `CheckoutForm` loads funds through `services/products.ts` (SWR) and POSTs to `/api/checkout` with `utils/fetchJson`
+3. `utils/fetchJson` never throws: it resolves `true` on 204, parsed JSON on success, and `false` on any failure (silently on 500). Errors go to `utils/alerts`, but nothing renders them yet
 4. After a successful checkout POST, the form redirects to Stripe Checkout via `stripe.redirectToCheckout`
-5. `services/` contains typed wrappers for the API (donations, checkout); these are the right place to add new API calls
+5. `services/` holds the browser API clients; add new client calls there
 
 ### Key patterns
 
@@ -59,16 +61,37 @@ cp .env.example .env.local  # fill values from a teammate
 - **Stripe fees** are calculated client-side using `calculateStripeFees` from `utils/stripe-helpers.ts` with constants from `config/index.ts`
 - Components are re-exported through barrel `index.ts` files in each `components/` subdirectory
 
+### Server (Route Handlers)
+
+- A `route.ts` may only export HTTP verbs, so each is `export const POST = serve(handleX)`; the logic is `handleX(req, deps, ctx)` in `lib/handlers/`
+- `deps` is `{ stripe, env }` (`serveWithEmail` adds `resend`), built from `getStripe()` and `getServerEnv()`, both lazy so `next build` needs no secrets
+- Errors are `jsonError(status, message)` → `{ errors: [message] }`; unexpected throws become a logged 500 via `withErrorHandling`
+- Redirect URLs come from `CLIENT_BASE_URL`, never the `Origin` header
+- Magic link: `/api/login` emails a 10 minute HS256 JWT, `/api/verify` redirects to a Stripe billing portal session
+
+### Testing
+
+- `lib/test/helpers.ts` has `fakeStripe`, `fakeResend`, `firstArg`, `jsonRequest`; `services/test/helpers.ts` has `stubFetch`. Tests never touch the network
+- Import with relative paths in anything a mocha test loads
+- Runbook for a real sandbox pass: `docs/stripe-testing.md`
+
+### Conventions
+
+- Exported types live in `lib/types.ts`; avoid `unknown` and `any` (use `JsonValue`, SDK types)
+- Keep markdown changes in their own commit: the pre-commit hook reformats every file when `.ts` files are staged
+
 ### Styling
 
 Tailwind CSS with a custom palette. Key custom colors: `ahBlue` (#0059a1), `ahGray` (#79777a), `primary-*` (teal scale), `secondary-500` (green), `errorColor-*`. Fonts: `font-heading` (Montserrat Alternates), `font-subheading` (Montserrat), `font-body` (Roboto) — all loaded via `next/font/google` in `app/layout.tsx`.
 
 ### Environment variables
 
-`NEXT_PUBLIC_API_BASE_URL` is the only required public variable. It is baked into the Docker image at build time, so staging and production require separate builds.
+`NEXT_PUBLIC_*` variables are baked into the Docker image at build time, so staging and production require separate builds. Server-only variables (`STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`) are validated in `lib/env.ts` and read per request: `.env.local` locally, `~/ah-web-ui.env` on the EC2 hosts (`--env-file`, `KEY=value`, no quotes).
 
 ### Deployment
 
 GitLab CI pipeline: `test` → `build:staging` → `deploy:staging` (auto on `main`); `build:production` → `deploy:production` (manual). ESLint is suppressed during Next.js builds (`ignoreDuringBuilds: true` in `next.config.js`) — lint must pass in the `test` stage instead.
 
-Sentry is configured for error tracking with 10% trace sampling. Source maps are uploaded via the Sentry webpack plugin using `SENTRY_AUTH_TOKEN`.
+Each deploy job exits before stopping the running container if `~/ah-web-ui.env` is missing.
+
+Sentry is configured for error tracking with 10% trace sampling. Source maps are uploaded via the Sentry webpack plugin using `SENTRY_AUTH_TOKEN`. Server-side Sentry does not initialize yet (`instrumentation.ts` checks `NODE_RUNTIME`; Next sets `NEXT_RUNTIME`), tracked in WEB-25.
