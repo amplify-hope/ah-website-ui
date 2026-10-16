@@ -1,4 +1,5 @@
 import { expect } from 'chai'
+import Stripe from 'stripe'
 import { withErrorHandling } from '../api-response'
 import { handleCheckoutSession } from '../handlers/checkout-sessions'
 import { fakeStripe, testEnv } from './helpers'
@@ -34,6 +35,24 @@ describe('#GET /api/checkout-sessions/[id]', () => {
 
   afterEach(() => {
     console.error = originalConsoleError
+  })
+
+  it('should return 404 when Stripe has no such session', async () => {
+    const { response } = callSession('cs_test_missing', {
+      'checkout.sessions.retrieve': async () => {
+        throw new Stripe.errors.StripeInvalidRequestError({
+          type: 'invalid_request_error',
+          code: 'resource_missing',
+          message: 'No such checkout.session'
+        })
+      }
+    })
+    const result = await response
+
+    expect(result.status).to.eq(404)
+    expect(await result.json()).to.deep.eq({
+      errors: ['Checkout session not found']
+    })
   })
 
   it('should retrieve the session with the payment intent expanded and return it as-is', async () => {
