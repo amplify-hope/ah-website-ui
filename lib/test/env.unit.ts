@@ -3,7 +3,6 @@ import { getServerEnv, resetServerEnvCache } from '../env'
 
 const validEnv = {
   STRIPE_SECRET_KEY: 'sk_test_123',
-  STRIPE_WEBHOOK_SECRET: 'whsec_123',
   JWT_SECRET: 'jwt-secret',
   RESEND_API_KEY: 're_123',
   RESEND_TEMPLATE_ID: 'template-id',

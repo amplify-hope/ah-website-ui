@@ -4,7 +4,6 @@ import { JsonValue, ServerEnv, StripeCall } from '../types'
 
 export const testEnv: ServerEnv = {
   STRIPE_SECRET_KEY: 'sk_test_fake',
-  STRIPE_WEBHOOK_SECRET: 'whsec_fake',
   JWT_SECRET: 'test-jwt-secret',
   RESEND_API_KEY: 're_fake',
   RESEND_TEMPLATE_ID: 'template-fake',

@@ -3,7 +3,6 @@ import Stripe from 'stripe'
 
 export type ServerEnv = {
   STRIPE_SECRET_KEY: string
-  STRIPE_WEBHOOK_SECRET: string
   JWT_SECRET: string
   RESEND_API_KEY: string
   RESEND_TEMPLATE_ID: string
