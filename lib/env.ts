@@ -1,13 +1,27 @@
 import * as yup from 'yup'
 import { ServerEnv } from './types'
 
+const isHttpUrl = (value: string): boolean => {
+  try {
+    const { protocol } = new URL(value)
+    return protocol === 'http:' || protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 const serverEnvSchema: yup.ObjectSchema<ServerEnv> = yup
   .object({
     STRIPE_SECRET_KEY: yup.string().required(),
     JWT_SECRET: yup.string().required(),
     RESEND_API_KEY: yup.string().required(),
     RESEND_TEMPLATE_ID: yup.string().required(),
-    CLIENT_BASE_URL: yup.string().url().required()
+    CLIENT_BASE_URL: yup
+      .string()
+      .test('http-url', '${path} must be an http(s) url', value =>
+        isHttpUrl(value ?? '')
+      )
+      .required()
   })
   .required()
 

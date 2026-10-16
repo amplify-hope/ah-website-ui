@@ -1,3 +1,4 @@
+import Stripe from 'stripe'
 import { jsonError } from '../api-response'
 import { CheckoutSessionContext, Deps } from '../types'
 
@@ -15,9 +16,18 @@ export const handleCheckoutSession = async (
     return jsonError(400, 'Invalid checkout session id')
   }
 
-  const session = await stripe.checkout.sessions.retrieve(id, {
-    expand: ['payment_intent']
-  })
-
-  return Response.json(session)
+  try {
+    const session = await stripe.checkout.sessions.retrieve(id, {
+      expand: ['payment_intent']
+    })
+    return Response.json(session)
+  } catch (err) {
+    if (
+      err instanceof Stripe.errors.StripeError &&
+      err.code === 'resource_missing'
+    ) {
+      return jsonError(404, 'Checkout session not found')
+    }
+    throw err
+  }
 }

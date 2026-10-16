@@ -80,6 +80,7 @@ describe('#POST /api/checkout', () => {
       })
       expect(firstArg(calls, 'checkout.sessions.create')).to.deep.eq({
         customer_email: 'donor@example.com',
+        customer_creation: 'always',
         mode: 'payment',
         line_items: [{ price: 'price_new', quantity: 1 }],
         billing_address_collection: 'required',
@@ -116,6 +117,7 @@ describe('#POST /api/checkout', () => {
       )
       expect(params.customer).to.eq('cus_1')
       expect(params).to.not.have.property('customer_email')
+      expect(params).to.not.have.property('customer_creation')
     })
 
     it('should round the amount to cents', async () => {
@@ -180,9 +182,12 @@ describe('#POST /api/checkout', () => {
         lookup_key: 'prod_general|month|2500',
         recurring: { interval: 'month', interval_count: 1 }
       })
-      expect(firstArg(calls, 'checkout.sessions.create')).to.include({
-        mode: 'subscription'
-      })
+      const params = firstArg<Stripe.Checkout.SessionCreateParams>(
+        calls,
+        'checkout.sessions.create'
+      )
+      expect(params.mode).to.eq('subscription')
+      expect(params).to.not.have.property('customer_creation')
     })
 
     it('should bill a quarterly donation as every three months', async () => {
