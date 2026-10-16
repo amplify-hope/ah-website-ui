@@ -71,7 +71,7 @@ Known gaps, not changed here: no alert UI exists, so `fetchJson` failures are si
 - [x] C3. Fix the latent bug in `CheckoutForm.tsx`: stop and reset the form when the checkout request fails instead of calling Stripe with an undefined session id, and only read `error.message` when `redirectToCheckout` returned an error
 - [x] C4. Delete `services/donations.ts` (nothing imported it)
 - [x] C5. Remove `NEXT_PUBLIC_API_BASE_URL` from `.env.example`, the `Dockerfile` and the CI build commands (`config/` never referenced it). Delete the CI/CD variable in GitLab separately
-- [x] C6. Pass server-only env to the deployed container: both deploy jobs start it with `--env-file ~/ah-web-ui.env` and exit before stopping the running container if the file is missing. Create the file on each host (`STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`; `KEY=value`, no quotes) before merging. Interim until WEB-26
+- [x] C6. Pass server-only env to the deployed container: both deploy jobs start it with `--env-file ~/.env/.ah-ui.env` and exit before stopping the running container if the file is missing. Create the file on each host (`STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`; `KEY=value`, no quotes) before merging. Interim until WEB-26
 
 ### [WEB-24] Testing: route-level integration coverage
 
@@ -96,7 +96,7 @@ Route-level tests for the ported routes now ship with each route in WEB-22 (see 
 - [ ] F1. Provision an AWS Amplify Hosting app connected to the `ah-website-ui` GitLab.com repo
 - [ ] F2. Configure branch/environment mapping mirroring today's gate: `main` → staging (auto-deploy), a manual-promote step or protected branch → production
 - [ ] F3. Write `amplify.yml` build spec: install → lint → typecheck → `test:unit` → `test:integration` → build
-- [ ] F4. Migrate environment variables into Amplify Console per branch: existing `NEXT_PUBLIC_*` vars plus new server secrets (`STRIPE_SECRET_KEY`, `JWT_SECRET` — must carry over the exact current value so in-flight magic links don't break —, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`) Until then the Docker hosts read the same variables from `~/ah-web-ui.env`.
+- [ ] F4. Migrate environment variables into Amplify Console per branch: existing `NEXT_PUBLIC_*` vars plus new server secrets (`STRIPE_SECRET_KEY`, `JWT_SECRET` — must carry over the exact current value so in-flight magic links don't break —, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`) Until then the Docker hosts read the same variables from `~/.env/.ah-ui.env`.
 - [ ] F5. Spike: verify `next.config.js`'s `output: 'standalone'` setting (Docker-specific) against Amplify's Next.js compute integration; adjust as needed before porting all routes
 - [ ] F6. Configure custom domain + managed SSL in Amplify, replacing certbot/nginx on the old EC2 host
 - [ ] F7. Decide and implement the final shape of `.gitlab-ci.yml`: reduce to lint/test-only gates (recommended) or retire in favor of `amplify.yml` running everything

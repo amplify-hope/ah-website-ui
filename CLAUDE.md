@@ -86,12 +86,12 @@ Tailwind CSS with a custom palette. Key custom colors: `ahBlue` (#0059a1), `ahGr
 
 ### Environment variables
 
-`NEXT_PUBLIC_*` variables are baked into the Docker image at build time, so staging and production require separate builds. Server-only variables (`STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`) are validated in `lib/env.ts` and read per request: `.env.local` locally, `~/ah-web-ui.env` on the EC2 hosts (`--env-file`, `KEY=value`, no quotes).
+`NEXT_PUBLIC_*` variables are baked into the Docker image at build time, so staging and production require separate builds. Server-only variables (`STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`) are validated in `lib/env.ts` and read per request: `.env.local` locally, `~/.env/.ah-ui.env` on the EC2 hosts (`--env-file`, `KEY=value`, no quotes).
 
 ### Deployment
 
 GitLab CI pipeline: `test` → `build:staging` → `deploy:staging` (auto on `main`); `build:production` → `deploy:production` (manual). ESLint is suppressed during Next.js builds (`ignoreDuringBuilds: true` in `next.config.js`) — lint must pass in the `test` stage instead.
 
-Each deploy job exits before stopping the running container if `~/ah-web-ui.env` is missing.
+Each deploy job exits before stopping the running container if `~/.env/.ah-ui.env` is missing.
 
 Sentry is configured for error tracking with 10% trace sampling. Source maps are uploaded via the Sentry webpack plugin using `SENTRY_AUTH_TOKEN`. Server-side Sentry does not initialize yet (`instrumentation.ts` checks `NODE_RUNTIME`; Next sets `NEXT_RUNTIME`), tracked in WEB-25.
