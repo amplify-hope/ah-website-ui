@@ -67,13 +67,14 @@ deploy:staging:
     - chmod 644 ~/.ssh/known_hosts
   script:
     - ssh $EC2_USER@$EC2_HOST "
+      test -f ~/ah-web-ui.env || { echo 'missing ~/ah-web-ui.env'; exit 1; };
       echo $DOCKER_HUB_TOKEN | docker login -u agiannellah --password-stdin;
       docker pull agiannellah/ah-web-ui:staging-${CI_COMMIT_SHORT_SHA};
       docker stop amplify-hope-front-end;
       echo 'amplify-hope-ui container stopped';
       docker rm amplify-hope-front-end;
       echo 'amplify-hope-ui container removed';
-      docker run --name amplify-hope-front-end -p 3000:3000 --restart unless-stopped -d agiannellah/ah-web-ui:staging-${CI_COMMIT_SHORT_SHA};
+      docker run --name amplify-hope-front-end --env-file ~/ah-web-ui.env -p 3000:3000 --restart unless-stopped -d agiannellah/ah-web-ui:staging-${CI_COMMIT_SHORT_SHA};
       docker image prune -af;"
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
@@ -117,13 +118,14 @@ deploy:production:
     - chmod 644 ~/.ssh/known_hosts
   script:
     - ssh $EC2_USER@$EC2_HOST "
+      test -f ~/ah-web-ui.env || { echo 'missing ~/ah-web-ui.env'; exit 1; };
       echo $DOCKER_HUB_TOKEN | docker login -u agiannellah --password-stdin;
       docker pull agiannellah/ah-web-ui:prod-${CI_COMMIT_SHORT_SHA};
       docker stop amplify-hope-front-end;
       echo 'amplify-hope-ui container stopped';
       docker rm amplify-hope-front-end;
       echo 'amplify-hope-ui container removed';
-      docker run --name amplify-hope-front-end -p 3000:3000 --restart unless-stopped -d agiannellah/ah-web-ui:prod-${CI_COMMIT_SHORT_SHA};
+      docker run --name amplify-hope-front-end --env-file ~/ah-web-ui.env -p 3000:3000 --restart unless-stopped -d agiannellah/ah-web-ui:prod-${CI_COMMIT_SHORT_SHA};
       docker image prune -af;"
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
