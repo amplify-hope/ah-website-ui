@@ -88,20 +88,23 @@ export const CheckoutForm = (props: CheckoutFormProps) => {
             isRecurring
           }
 
-          const response = await fetchJson(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/checkout`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(requestBody)
-            }
-          )
+          const response = await fetchJson('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+          })
+
+          if (!response) {
+            setLoading(false)
+            setSubmitting(false)
+            return
+          }
 
           const stripe = await getStripe()
           const { error } = await stripe!.redirectToCheckout({
             sessionId: response.id
           })
-          console.warn(error.message)
+          if (error) console.warn(error.message)
           setLoading(false)
           setSubmitting(false)
         }}
