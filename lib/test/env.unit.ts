@@ -43,6 +43,24 @@ describe('#serverEnv', () => {
     expect(message).to.not.contain(validEnv.STRIPE_SECRET_KEY)
   })
 
+  it('should accept a localhost CLIENT_BASE_URL', () => {
+    process.env = {
+      ...originalEnv,
+      ...validEnv,
+      CLIENT_BASE_URL: 'http://localhost:3000'
+    }
+    expect(getServerEnv().CLIENT_BASE_URL).to.equal('http://localhost:3000')
+  })
+
+  it('should reject a CLIENT_BASE_URL that is not an http(s) url', () => {
+    process.env = {
+      ...originalEnv,
+      ...validEnv,
+      CLIENT_BASE_URL: 'ftp://example.com'
+    }
+    expect(() => getServerEnv()).to.throw(/CLIENT_BASE_URL/)
+  })
+
   it('should reject a CLIENT_BASE_URL that is not a url', () => {
     process.env = { ...originalEnv, ...validEnv, CLIENT_BASE_URL: 'not-a-url' }
     expect(() => getServerEnv()).to.throw(/CLIENT_BASE_URL/)
