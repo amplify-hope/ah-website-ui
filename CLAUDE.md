@@ -94,4 +94,4 @@ GitLab CI pipeline: `test` → `build:staging` → `deploy:staging` (auto on `ma
 
 Each deploy job exits before stopping the running container if `~/.env/.ah-ui.env` is missing.
 
-Sentry is configured for error tracking with 10% trace sampling. Source maps are uploaded via the Sentry webpack plugin using `SENTRY_AUTH_TOKEN`. Server-side Sentry does not initialize yet (`instrumentation.ts` checks `NODE_RUNTIME`; Next sets `NEXT_RUNTIME`), tracked in WEB-25.
+Sentry is configured for error tracking with 10% trace sampling. Source maps are uploaded via the Sentry webpack plugin using `SENTRY_AUTH_TOKEN`. Server-side Sentry loads from `instrumentation.ts` (keyed on `NEXT_RUNTIME`). `withErrorHandling` reports caught errors with `Sentry.captureException`, since Next's `onRequestError` never sees them. `lib/sentry.ts` holds the shared options and strips request bodies, cookies, query strings and user info from events, because these routes handle donor emails. Events carry `NEXT_PUBLIC_APP_ENV` as the environment.

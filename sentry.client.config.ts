@@ -1,10 +1,9 @@
 import * as Sentry from '@sentry/nextjs'
+import { sentryOptions } from './lib/sentry'
 
 Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  ...sentryOptions,
   integrations: [Sentry.replayIntegration()],
-  tracesSampleRate: 0.1,
   replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0,
-  environment: process.env.NEXT_PUBLIC_NODE_ENV
+  replaysOnErrorSampleRate: 1.0
 })

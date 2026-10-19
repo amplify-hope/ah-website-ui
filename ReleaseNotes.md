@@ -1,5 +1,12 @@
 # Amplify Hope Website Release Notes
 
+## v2.8.2
+
+- Server errors are now reported to Sentry
+  - Sentry was not loading on the server, so API errors were only in the container log
+  - Events leave without request bodies, cookies, query strings or user info, since the API handles donor emails
+  - Events are tagged with the real environment (staging or production)
+
 ## v2.8.1
 
 - New one-time donors are now saved as Stripe customers again, so they sync to QuickBooks
