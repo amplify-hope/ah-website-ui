@@ -1,4 +1,5 @@
 import { expect } from 'chai'
+import * as Sentry from '@sentry/nextjs'
 import { jsonError, withErrorHandling } from '../api-response'
 
 type ConsoleArgs = Parameters<typeof console.error>
@@ -35,6 +36,25 @@ describe('#apiResponse', () => {
 
       expect(response.status).to.eq(204)
       expect(logged).to.have.length(0)
+    })
+
+    it('should report a thrown error to Sentry', async () => {
+      const reported: Sentry.Event[] = []
+      Sentry.init({
+        dsn: 'https://key@example.com/1',
+        beforeSend: event => {
+          reported.push(event)
+          return null
+        }
+      })
+
+      await withErrorHandling(async () => {
+        throw new Error('boom')
+      })
+      await Sentry.close()
+
+      expect(reported).to.have.length(1)
+      expect(reported[0].exception?.values?.[0].value).to.eq('boom')
     })
 
     it('should turn a thrown error into a logged 500 without leaking the message', async () => {
