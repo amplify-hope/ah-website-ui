@@ -88,9 +88,9 @@ Route-level tests for the ported routes now ship with each route in WEB-22 (see 
 
 ### [WEB-25] Security & cleanup
 
-- [ ] E1. Reconcile the `resolutions` blocks from both `package.json` files when merging dependencies
-- [ ] E2. Drop `@sentry/node` + `@sentry/profiling-node` (Express-specific); confirm `@sentry/nextjs` auto-captures Route Handler errors with no manual wiring needed. **Note:** `instrumentation.ts` checks `process.env.NODE_RUNTIME`, but Next sets `NEXT_RUNTIME`, so `sentry.server.config` never loads and Route Handler errors are not reported today (they are only logged with `console.error`). Fix it, add an `onRequestError` export, and set a restrictive data-collection config like the API does, since these routes handle donor emails
-- [ ] E3. Remove `docker-compose.yml` and `src/init-db/` from the merged codebase (no DB)
+- [x] E1. Reconcile the `resolutions` blocks from both `package.json` files when merging dependencies. Nothing to merge: the API has no `resolutions` block, and the UI's (`qs`, `lodash`, `lodash-es`, `rollup`) stays as is
+- [x] E2. Drop `@sentry/node` + `@sentry/profiling-node` (Express-specific); confirm `@sentry/nextjs` auto-captures Route Handler errors with no manual wiring needed. **Note:** `instrumentation.ts` checks `process.env.NODE_RUNTIME`, but Next sets `NEXT_RUNTIME`, so `sentry.server.config` never loads and Route Handler errors are not reported today (they are only logged with `console.error`). Fix it, add an `onRequestError` export, and set a restrictive data-collection config like the API does, since these routes handle donor emails. Done: `instrumentation.ts` keys on `NEXT_RUNTIME` and exports `onRequestError`; `withErrorHandling` calls `Sentry.captureException` because it catches errors before Next can; `lib/sentry.ts` strips bodies, cookies, query strings, sensitive headers and user info (v8 has no `dataCollection` option; `sendDefaultPii` is false). The environment tag now comes from `NEXT_PUBLIC_APP_ENV`, since `NEXT_PUBLIC_NODE_ENV` was never set. Checked against a production build with a fake Sentry endpoint: a 500 produced one event with no email, token or cookie. `@sentry/node` and `@sentry/profiling-node` were never added to the UI
+- [x] E3. Remove `docker-compose.yml` and `src/init-db/` from the merged codebase (no DB). Never copied into the UI; they only exist in the old API repo, which is archived in WEB-27 (G6)
 
 ### [WEB-26] Infrastructure: migrate to AWS Amplify Hosting
 
