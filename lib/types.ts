@@ -1,3 +1,4 @@
+import type * as Sentry from '@sentry/nextjs'
 import type { Resend } from 'resend'
 import type Stripe from 'stripe'
 
@@ -58,3 +59,5 @@ export type ProductsResponse = {
 export type ProductsContext = { params: Promise<{ type: string }> }
 
 export type CheckoutSessionContext = { params: Promise<{ id: string }> }
+
+export type SentryOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
