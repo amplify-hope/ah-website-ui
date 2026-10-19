@@ -1,5 +1,9 @@
 # Amplify Hope Website Release Notes
 
+## v2.8.3
+
+- Looking up a checkout session with a malformed id returns a 400 instead of a 500, so junk ids no longer create Sentry issues
+
 ## v2.8.2
 
 - Server errors are now reported to Sentry
