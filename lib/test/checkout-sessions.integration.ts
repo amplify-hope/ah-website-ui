@@ -37,6 +37,24 @@ describe('#GET /api/checkout-sessions/[id]', () => {
     console.error = originalConsoleError
   })
 
+  it('should return 400 when Stripe rejects the id as malformed', async () => {
+    const { response } = callSession(`cs_test_${'a'.repeat(300)}`, {
+      'checkout.sessions.retrieve': async () => {
+        throw new Stripe.errors.StripeInvalidRequestError({
+          type: 'invalid_request_error',
+          param: 'session',
+          message: 'Invalid string: must be at most 66 characters'
+        })
+      }
+    })
+    const result = await response
+
+    expect(result.status).to.eq(400)
+    expect(await result.json()).to.deep.eq({
+      errors: ['Invalid checkout session id']
+    })
+  })
+
   it('should return 404 when Stripe has no such session', async () => {
     const { response } = callSession('cs_test_missing', {
       'checkout.sessions.retrieve': async () => {

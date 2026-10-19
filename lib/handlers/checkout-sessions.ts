@@ -28,6 +28,14 @@ export const handleCheckoutSession = async (
     ) {
       return jsonError(404, 'Checkout session not found')
     }
+    // Stripe rejects ids it cannot parse (for example one over 66 characters)
+    // without a code; that is a bad request, not a server error.
+    if (
+      err instanceof Stripe.errors.StripeInvalidRequestError &&
+      err.param === 'session'
+    ) {
+      return jsonError(400, 'Invalid checkout session id')
+    }
     throw err
   }
 }
