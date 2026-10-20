@@ -16,3 +16,10 @@ export const stubFetch = (response: Response): FetchCall[] => {
 export const restoreFetch = () => {
   globalThis.fetch = originalFetch
 }
+
+// Replaces the global fetch with one that rejects, like a dropped connection.
+export const stubFetchFailure = (error: Error) => {
+  globalThis.fetch = async () => {
+    throw error
+  }
+}

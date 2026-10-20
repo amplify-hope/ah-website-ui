@@ -64,7 +64,7 @@ Each route is a thin `route.ts` plus a `lib/handlers/<name>.ts` function, and **
 
 ### [WEB-23] Frontend rewiring to same-origin API calls
 
-Known gaps, not changed here: no alert UI exists, so `fetchJson` failures are silent; the sign-in form always goes to the check-your-email page; the result page shows "$NaN" if its session fetch fails.
+Known gaps, not changed here: no alert UI exists, so `fetchJson` failures are silent; the sign-in form always goes to the check-your-email page; the result page shows "$NaN" if its session fetch fails. All three are fixed in WEB-28.
 
 - [x] C1. Replace every `NEXT_PUBLIC_API_BASE_URL` call with a relative `/api/...` path: `components/auth/login-with-email.tsx`, `components/checkout/CheckoutForm.tsx` (both the SWR fetch and the POST), `services/checkout.ts`
 - [x] C2. Standardize `CheckoutForm.tsx`'s SWR fetcher on `fetchJson` instead of `axios`, through the new `services/products.ts`, which throws on failure so SWR's `error` still fires (`fetchJson` never throws). `axios` is removed
@@ -112,6 +112,18 @@ Route-level tests for the ported routes now ship with each route in WEB-22 (see 
 - [ ] G5. Decommission the old `ah-website-ui` EC2/Docker deployment
 - [ ] G6. Decommission the `ah-website-api` EC2 host/container; archive (read-only) the `ah-website-api` GitLab repo
 - [ ] G7. Update `ah-website-ui`'s `README.md` and `CLAUDE.md` to reflect the consolidated architecture and Amplify deployment model
+
+### [WEB-28] Throwing API client and visible request errors
+
+Replaces `utils/fetchJson`, which resolved `false` on any failure, returned early on any 500 without reading the body, and fed an alert service nothing listened to.
+
+- [x] H1. Add `utils/api-client.ts`: `requestJson` throws `ApiError(message, status)` on any non-2xx (message is `errors[0]` from the body, else the status text), resolves with nothing for a 204, and lets network failures propagate. `errorMessage` shows a 4xx message and fixed copy for anything else. Unit tests with the fetch stub, now shared in `utils/test/fetch-stub.ts`.
+- [x] H2. `services/products.ts` calls `requestJson` directly, without the wrap-and-rethrow. The donate form shows fixed copy when the funds fail to load.
+- [x] H3. `getCheckoutSession` throws instead of returning `false`; the result page shows "Thank you for your donation. We couldn't load the details of this one." instead of "$NaN".
+- [x] H4. `createCheckoutSession` in `services/checkout.ts`; `CheckoutForm` submits through it and shows the error above the submit button (Formik `status`), re-enabling the button.
+- [x] H5. `services/auth.ts` (`requestMagicLink`): a 404 still resolves, so the sign-in page goes to check-your-email and does not reveal which emails are donors; a 400, 500 or network failure stays on the form with the message. The email is URL-encoded in the redirect.
+- [x] H6. Delete `utils/fetchJson.ts`, `utils/alerts.ts` and the `rxjs` dependency (it stays in `yarn.lock` only as another package's dependency). CLAUDE.md and the `lib/api-response.ts` comment updated.
+- [x] H7. Docs: this plan, CLAUDE.md and the ticket. Released as v2.9.0.
 
 ## Risks & Mitigations
 

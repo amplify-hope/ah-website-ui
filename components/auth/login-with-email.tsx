@@ -1,8 +1,8 @@
-import { LoginWithEmailRequestBody } from 'common/types'
 import { IconSend } from '@tabler/icons-react'
 import { ErrorMessage, Field, Form, Formik, FormikHelpers } from 'formik'
 import { useState } from 'react'
-import fetchJson from 'utils/fetchJson'
+import { requestMagicLink } from 'services/auth'
+import { errorMessage } from 'utils/api-client'
 import { LoginWithEmailSchema } from 'utils/validation-schema'
 import { useRouter } from 'next/navigation'
 
@@ -24,23 +24,22 @@ export const LoginWithEmailForm = () => {
         validationSchema={LoginWithEmailSchema}
         onSubmit={async (
           formValues: FormValues,
-          { setSubmitting }: FormikHelpers<FormValues>
+          { setSubmitting, setStatus }: FormikHelpers<FormValues>
         ) => {
           setLoading(true)
-          const requestBody: LoginWithEmailRequestBody = {
-            email: formValues.email
+          setStatus(undefined)
+
+          try {
+            await requestMagicLink(formValues.email)
+            router.push(
+              `/auth/verify?email=${encodeURIComponent(formValues.email)}`
+            )
+          } catch (err) {
+            setStatus(errorMessage(err as Error))
+          } finally {
+            setLoading(false)
+            setSubmitting(false)
           }
-
-          await fetchJson('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-          })
-
-          setLoading(false)
-          setSubmitting(false)
-
-          router.push(`/auth/verify?email=${formValues.email}`)
         }}
       >
         {props => {
@@ -65,6 +64,11 @@ export const LoginWithEmailForm = () => {
                   />
                 </div>
               </div>
+              {props.status && (
+                <div className='w-full mt-4 text-sm text-red-500'>
+                  {props.status}
+                </div>
+              )}
               <button
                 type='submit'
                 disabled={loading}

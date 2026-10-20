@@ -61,3 +61,8 @@ export type ProductsContext = { params: Promise<{ type: string }> }
 export type CheckoutSessionContext = { params: Promise<{ id: string }> }
 
 export type SentryOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
+
+export type RequestJsonOptions = {
+  method?: 'GET' | 'POST'
+  body?: JsonValue
+}

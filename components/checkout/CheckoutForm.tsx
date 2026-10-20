@@ -2,9 +2,10 @@ import { DonationRequestBody, IntervalOptions } from 'common/types'
 import { ErrorMessage, Field, Form, Formik, FormikHelpers } from 'formik'
 import { ProductType } from 'lib/types'
 import { useState } from 'react'
+import { createCheckoutSession } from 'services/checkout'
 import { getProducts } from 'services/products'
 import useSWR from 'swr'
-import fetchJson from 'utils/fetchJson'
+import { errorMessage, GENERIC_ERROR_MESSAGE } from 'utils/api-client'
 import getStripe from 'utils/get-stripejs'
 import {
   calculateStripeFees,
@@ -50,7 +51,12 @@ export const CheckoutForm = (props: CheckoutFormProps) => {
   )
 
   if (isLoading) return <div>Loading...</div>
-  if (error) return <div>Error: {error.message}</div>
+  if (error)
+    return (
+      <div className='text-sm text-red-500'>
+        We couldn&apos;t load the funds. Please refresh the page to try again.
+      </div>
+    )
 
   return (
     <div className='w-full p-6 mt-2 bg-white rounded shadow-md'>
@@ -71,9 +77,10 @@ export const CheckoutForm = (props: CheckoutFormProps) => {
         }
         onSubmit={async (
           formValues: FormValues,
-          { setSubmitting }: FormikHelpers<FormValues>
+          { setSubmitting, setStatus }: FormikHelpers<FormValues>
         ) => {
           setLoading(true)
+          setStatus(undefined)
 
           const amount = !formValues.coverFees
             ? Number(formValues.amount)
@@ -88,25 +95,22 @@ export const CheckoutForm = (props: CheckoutFormProps) => {
             isRecurring
           }
 
-          const response = await fetchJson('/api/checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-          })
-
-          if (!response) {
+          try {
+            const session = await createCheckoutSession(requestBody)
+            const stripe = await getStripe()
+            const { error } = await stripe!.redirectToCheckout({
+              sessionId: session.id
+            })
+            if (error) {
+              console.warn(error.message)
+              setStatus(GENERIC_ERROR_MESSAGE)
+            }
+          } catch (err) {
+            setStatus(errorMessage(err as Error))
+          } finally {
             setLoading(false)
             setSubmitting(false)
-            return
           }
-
-          const stripe = await getStripe()
-          const { error } = await stripe!.redirectToCheckout({
-            sessionId: response.id
-          })
-          if (error) console.warn(error.message)
-          setLoading(false)
-          setSubmitting(false)
         }}
       >
         {props => {
@@ -287,6 +291,11 @@ export const CheckoutForm = (props: CheckoutFormProps) => {
                   />
                 </div>
               </div>
+              {props.status && (
+                <div className='w-full mt-4 text-sm text-red-500'>
+                  {props.status}
+                </div>
+              )}
               <button
                 type='submit'
                 disabled={loading}

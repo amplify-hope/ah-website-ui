@@ -1,6 +1,7 @@
 import { expect } from 'chai'
+import { ApiError } from '../../utils/api-client'
 import { getProducts } from '../products'
-import { restoreFetch, stubFetch } from './helpers'
+import { restoreFetch, stubFetch } from '../../utils/test/fetch-stub'
 
 describe('#products service', () => {
   afterEach(restoreFetch)
@@ -27,7 +28,7 @@ describe('#products service', () => {
       })
     }
 
-    it('should throw when the route rejects the request, so SWR sets its error', async () => {
+    it('should throw an ApiError with the route message so SWR sets its error', async () => {
       stubFetch(
         Response.json({ errors: ['Invalid product type'] }, { status: 400 })
       )
@@ -39,7 +40,9 @@ describe('#products service', () => {
         thrown = err as Error
       }
 
-      expect(thrown?.message).to.eq('Unable to load funds')
+      expect(thrown).to.be.instanceOf(ApiError)
+      expect(thrown?.message).to.eq('Invalid product type')
+      expect((thrown as ApiError).status).to.eq(400)
     })
 
     it('should throw when the route fails', async () => {
@@ -54,7 +57,8 @@ describe('#products service', () => {
         thrown = err as Error
       }
 
-      expect(thrown?.message).to.eq('Unable to load funds')
+      expect(thrown).to.be.instanceOf(ApiError)
+      expect((thrown as ApiError).status).to.eq(500)
     })
   })
 })

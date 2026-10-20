@@ -6,7 +6,7 @@ type ConsoleArgs = Parameters<typeof console.error>
 
 describe('#apiResponse', () => {
   describe('jsonError', () => {
-    it('should return the errors shape fetchJson reads, with the given status', async () => {
+    it('should return the errors shape requestJson reads, with the given status', async () => {
       const response = jsonError(400, 'Invalid amount')
 
       expect(response.status).to.eq(400)
