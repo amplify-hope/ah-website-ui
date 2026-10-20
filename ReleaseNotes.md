@@ -1,5 +1,15 @@
 # Amplify Hope Website Release Notes
 
+## v2.9.0
+
+- Request errors are now shown instead of failing silently
+  - The donation form shows why a donation could not start and re-enables the button
+  - The sign-in form stays on the page when the email could not be sent
+  - The result page says the details could not be loaded instead of showing `$NaN`
+  - The donation form shows a message when the funds fail to load
+- Sign-in emails with a `+` now show correctly on the check your email page
+- Removed `fetchJson`, the unused alert service and the `rxjs` dependency
+
 ## v2.8.3
 
 - Looking up a checkout session with a malformed id returns a 400 instead of a 500, so junk ids no longer create Sentry issues
