@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/nextjs'
 
-// Errors use the `{ errors: [message] }` shape that utils/fetchJson reads to
-// surface an alert.
+// Errors use the `{ errors: [message] }` shape that utils/api-client reads for
+// the message on an ApiError.
 export const jsonError = (status: number, message: string): Response =>
   Response.json({ errors: [message] }, { status })
 
