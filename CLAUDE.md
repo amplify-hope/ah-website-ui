@@ -39,17 +39,17 @@ cp .env.example .env.local  # fill values from a teammate
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `app/`            | Next.js App Router pages and layouts; `app/api/*/route.ts` are the Route Handlers (one-line adapters)                                      |
 | `components/`     | React components, organized by feature (`checkout/`, `auth/`, `layout/`, `common/`)                                                        |
-| `services/`       | Browser clients for the same-origin API (`checkout`, `products`), thin wrappers over `utils/fetchJson`                                     |
+| `services/`       | Browser clients for the same-origin API (`checkout`, `products`, `auth`), thin wrappers over `utils/api-client`                            |
 | `lib/`            | Server code: `handlers/` (route logic), `deps.ts` (`serve`), `env.ts`, `magic-link.ts`, `donation.ts`; `types.ts` holds the exported types |
-| `utils/`          | Shared utilities: `fetchJson`, `alerts`, `stripe-helpers`, `get-stripejs`, `validation-schema`                                             |
+| `utils/`          | Shared utilities: `api-client`, `stripe-helpers`, `get-stripejs`, `validation-schema`                                                      |
 | `common/types/`   | Request-body types shared by client and server (`DonationRequestBody`, `LoginWithEmailRequestBody`, `IntervalOptions`)                     |
 | `config/index.ts` | App-wide constants: `CURRENCY`, `MIN_AMOUNT`, `MAX_AMOUNT`, Stripe fee modifiers                                                           |
 
 ### Data flow
 
 1. Pages in `app/` compose components from `components/`
-2. `CheckoutForm` loads funds through `services/products.ts` (SWR) and POSTs to `/api/checkout` with `utils/fetchJson`
-3. `utils/fetchJson` never throws: it resolves `true` on 204, parsed JSON on success, and `false` on any failure (silently on 500). Errors go to `utils/alerts`, but nothing renders them yet
+2. `CheckoutForm` loads funds through `services/products.ts` (SWR) and POSTs to `/api/checkout` through `services/checkout.ts`
+3. `utils/api-client` (`requestJson`) throws `ApiError(message, status)` on any non-2xx, with `errors[0]` from the body as the message; it resolves with nothing on 204. `errorMessage(err)` shows a 4xx message as is and fixed copy for anything else, so the three screens that make requests (donate form, sign-in form, result page) show failures instead of staying silent
 4. After a successful checkout POST, the form redirects to Stripe Checkout via `stripe.redirectToCheckout`
 5. `services/` holds the browser API clients; add new client calls there
 
@@ -71,7 +71,7 @@ cp .env.example .env.local  # fill values from a teammate
 
 ### Testing
 
-- `lib/test/helpers.ts` has `fakeStripe`, `fakeResend`, `firstArg`, `jsonRequest`; `services/test/helpers.ts` has `stubFetch`. Tests never touch the network
+- `lib/test/helpers.ts` has `fakeStripe`, `fakeResend`, `firstArg`, `jsonRequest`; `utils/test/fetch-stub.ts` has `stubFetch` and `stubFetchFailure`. Tests never touch the network
 - Import with relative paths in anything a mocha test loads
 - Runbook for a real sandbox pass: `docs/stripe-testing.md`
 
