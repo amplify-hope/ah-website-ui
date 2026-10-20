@@ -1,12 +1,7 @@
 import Stripe from 'stripe'
-import fetchJson from '../utils/fetchJson'
+import { requestJson } from '../utils/api-client'
 
-export const getCheckoutSession = async (
+export const getCheckoutSession = (
   id: string
-): Promise<Stripe.Checkout.Session> => {
-  const foundSession = await fetchJson(`/api/checkout-sessions/${id}`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' }
-  })
-  return foundSession
-}
+): Promise<Stripe.Checkout.Session> =>
+  requestJson<Stripe.Checkout.Session>(`/api/checkout-sessions/${id}`)

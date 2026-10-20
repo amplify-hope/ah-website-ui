@@ -1,4 +1,5 @@
 import { expect } from 'chai'
+import { ApiError } from '../../utils/api-client'
 import { getCheckoutSession } from '../checkout'
 import { restoreFetch, stubFetch } from '../../utils/test/fetch-stub'
 
@@ -24,7 +25,7 @@ describe('#checkout service', () => {
       expect(calls[0].init?.method).to.eq('GET')
     })
 
-    it('should resolve to false when the route rejects the id', async () => {
+    it('should throw an ApiError when the route rejects the id', async () => {
       stubFetch(
         Response.json(
           { errors: ['Invalid checkout session id'] },
@@ -32,15 +33,49 @@ describe('#checkout service', () => {
         )
       )
 
-      expect(await getCheckoutSession('prod_123')).to.eq(false)
+      let thrown: Error | undefined
+      try {
+        await getCheckoutSession('prod_123')
+      } catch (err) {
+        thrown = err as Error
+      }
+
+      expect(thrown).to.be.instanceOf(ApiError)
+      expect(thrown?.message).to.eq('Invalid checkout session id')
+      expect((thrown as ApiError).status).to.eq(400)
     })
 
-    it('should resolve to false when the route fails', async () => {
+    it('should throw an ApiError when Stripe has no such session', async () => {
+      stubFetch(
+        Response.json(
+          { errors: ['Checkout session not found'] },
+          { status: 404 }
+        )
+      )
+
+      let thrown: Error | undefined
+      try {
+        await getCheckoutSession('cs_test_missing')
+      } catch (err) {
+        thrown = err as Error
+      }
+
+      expect((thrown as ApiError).status).to.eq(404)
+    })
+
+    it('should throw an ApiError when the route fails', async () => {
       stubFetch(
         Response.json({ errors: ['Internal server error'] }, { status: 500 })
       )
 
-      expect(await getCheckoutSession('cs_test_1')).to.eq(false)
+      let thrown: Error | undefined
+      try {
+        await getCheckoutSession('cs_test_1')
+      } catch (err) {
+        thrown = err as Error
+      }
+
+      expect((thrown as ApiError).status).to.eq(500)
     })
   })
 })
