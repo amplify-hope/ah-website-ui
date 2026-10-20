@@ -50,7 +50,12 @@ export const CheckoutForm = (props: CheckoutFormProps) => {
   )
 
   if (isLoading) return <div>Loading...</div>
-  if (error) return <div>Error: {error.message}</div>
+  if (error)
+    return (
+      <div className='text-sm text-red-500'>
+        We couldn&apos;t load the funds. Please refresh the page to try again.
+      </div>
+    )
 
   return (
     <div className='w-full p-6 mt-2 bg-white rounded shadow-md'>
