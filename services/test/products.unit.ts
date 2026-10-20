@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { getProducts } from '../products'
-import { restoreFetch, stubFetch } from './helpers'
+import { restoreFetch, stubFetch } from '../../utils/test/fetch-stub'
 
 describe('#products service', () => {
   afterEach(restoreFetch)

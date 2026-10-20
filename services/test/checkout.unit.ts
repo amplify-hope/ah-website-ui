@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { getCheckoutSession } from '../checkout'
-import { restoreFetch, stubFetch } from './helpers'
+import { restoreFetch, stubFetch } from '../../utils/test/fetch-stub'
 
 describe('#checkout service', () => {
   afterEach(restoreFetch)
