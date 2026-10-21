@@ -5,9 +5,10 @@ let resendClient: Resend | undefined
 
 // Shared server-side Resend client, created lazily so the API key is only read
 // at request time.
-export const getResend = (): Resend => {
+export const getResend = async (): Promise<Resend> => {
   if (!resendClient) {
-    resendClient = new Resend(getServerEnv().RESEND_API_KEY)
+    const { RESEND_API_KEY } = await getServerEnv()
+    resendClient = new Resend(RESEND_API_KEY)
   }
   return resendClient
 }

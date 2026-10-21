@@ -4,9 +4,9 @@ import { Deps, EmailDeps, NoParamsContext } from './types'
 import { getResend } from '../utils/resend-server'
 import { getStripe } from '../utils/stripe-server'
 
-export const defaultDeps = (): Deps => ({
-  stripe: getStripe(),
-  env: getServerEnv()
+export const defaultDeps = async (): Promise<Deps> => ({
+  stripe: await getStripe(),
+  env: await getServerEnv()
 })
 
 // Adapter for Route Handlers. Next route files may only export HTTP verbs, so
@@ -17,7 +17,7 @@ export const serve =
     handler: (req: Request, deps: Deps, ctx: Ctx) => Promise<Response>
   ) =>
   (req: Request, ctx: Ctx): Promise<Response> =>
-    withErrorHandling(() => handler(req, defaultDeps(), ctx))
+    withErrorHandling(async () => handler(req, await defaultDeps(), ctx))
 
 // Same as serve(), for handlers that also send email.
 export const serveWithEmail =
@@ -25,6 +25,6 @@ export const serveWithEmail =
     handler: (req: Request, deps: EmailDeps, ctx: Ctx) => Promise<Response>
   ) =>
   (req: Request, ctx: Ctx): Promise<Response> =>
-    withErrorHandling(() =>
-      handler(req, { ...defaultDeps(), resend: getResend() }, ctx)
+    withErrorHandling(async () =>
+      handler(req, { ...(await defaultDeps()), resend: await getResend() }, ctx)
     )
