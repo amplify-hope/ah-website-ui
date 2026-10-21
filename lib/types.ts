@@ -10,6 +10,13 @@ export type ServerEnv = {
   CLIENT_BASE_URL: string
 }
 
+export type RawEnv = Record<string, string | undefined>
+
+export type SecretFetcher = (
+  secretId: string,
+  region: string
+) => Promise<RawEnv>
+
 export type Deps = {
   stripe: Stripe
   env: ServerEnv

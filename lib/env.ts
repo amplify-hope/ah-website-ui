@@ -1,5 +1,8 @@
 import * as yup from 'yup'
-import { ServerEnv } from './types'
+import { fetchSecretJson } from './secrets'
+import { RawEnv, SecretFetcher, ServerEnv } from './types'
+
+const CACHE_TTL_MS = 5 * 60 * 1000
 
 const isHttpUrl = (value: string): boolean => {
   try {
@@ -25,16 +28,20 @@ const serverEnvSchema: yup.ObjectSchema<ServerEnv> = yup
   })
   .required()
 
-let cachedEnv: ServerEnv | undefined
+let cached: { loadedAt: number; env: Promise<ServerEnv> } | undefined
 
-// Server-only secrets. Parsed lazily on first use (not at import time) so
-// `next build` doesn't need them. Error messages name the offending variables
-// but never include their values.
-export const getServerEnv = (): ServerEnv => {
-  if (cachedEnv) return cachedEnv
+const loadRawEnv = async (fetchSecret: SecretFetcher): Promise<RawEnv> => {
+  const { AH_SECRET_ID, AH_AWS_REGION } = process.env
+  if (!AH_SECRET_ID) return process.env
+  if (!AH_AWS_REGION) {
+    throw new Error('AH_AWS_REGION is required when AH_SECRET_ID is set')
+  }
+  return fetchSecret(AH_SECRET_ID, AH_AWS_REGION)
+}
 
+const parseServerEnv = (raw: RawEnv): ServerEnv => {
   try {
-    cachedEnv = serverEnvSchema.validateSync(process.env, {
+    return serverEnvSchema.validateSync(raw, {
       abortEarly: false,
       stripUnknown: true
     })
@@ -49,10 +56,22 @@ export const getServerEnv = (): ServerEnv => {
     }
     throw err
   }
+}
 
-  return cachedEnv
+export const getServerEnv = (
+  fetchSecret: SecretFetcher = fetchSecretJson
+): Promise<ServerEnv> => {
+  if (cached && Date.now() - cached.loadedAt < CACHE_TTL_MS) return cached.env
+
+  const env = loadRawEnv(fetchSecret).then(parseServerEnv)
+  const entry = { loadedAt: Date.now(), env }
+  cached = entry
+  env.catch(() => {
+    if (cached === entry) cached = undefined
+  })
+  return env
 }
 
 export const resetServerEnvCache = (): void => {
-  cachedEnv = undefined
+  cached = undefined
 }

@@ -28,6 +28,7 @@
     "rollup": "3.30.0"
   },
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.1154.0",
     "@sentry/nextjs": "^8.55.2",
     "@stripe/stripe-js": "^5.10.0",
     "@tabler/icons-react": "^3.35.0",
