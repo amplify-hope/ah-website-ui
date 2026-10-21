@@ -4,7 +4,7 @@
 const { withSentryConfig } = require('@sentry/nextjs')
 
 const nextConfig = {
-  output: 'standalone',
+  output: process.env.AWS_APP_ID ? undefined : 'standalone',
   eslint: {
     ignoreDuringBuilds: true
   }
