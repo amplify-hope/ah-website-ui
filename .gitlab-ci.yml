@@ -2,22 +2,33 @@ stages:
   - test
   - build:staging
   - deploy:staging
+  - verify:staging
   - build:production
   - deploy:production
+  - verify:production
 
 variables:
   NODE_CONTAINER: node:24-alpine
   DOCKER_CONTAINER: docker:24.0.7
 
-test:unit:
-  stage: test
+.node:
   image: ${NODE_CONTAINER}
   before_script:
     - apk add --no-cache make g++ python3
+    - yarn install --frozen-lockfile
+
+test:unit:
+  extends: .node
+  stage: test
   script:
-    - yarn
     - yarn test:unit
     - yarn test:integration
+
+test:typecheck:
+  extends: .node
+  stage: test
+  script:
+    - yarn typecheck
 
 test:snyk:
   stage: test
@@ -129,3 +140,64 @@ deploy:production:
       docker image prune -af;"
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
+
+.amplify:
+  image: alpine:3.22
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: https://gitlab.com
+  variables:
+    AWS_WEB_IDENTITY_TOKEN_FILE: /tmp/oidc-token
+    AWS_ROLE_SESSION_NAME: gitlab-${CI_PIPELINE_ID}
+  before_script:
+    - apk add --no-cache aws-cli git jq
+    - echo "$GITLAB_OIDC_TOKEN" > "$AWS_WEB_IDENTITY_TOKEN_FILE"
+
+.smoke:
+  image: alpine:3.22
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - sh scripts/smoke-test.sh "$SMOKE_URL"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+amplify:staging:
+  extends: .amplify
+  stage: deploy:staging
+  needs: [test:unit, test:typecheck]
+  environment: staging
+  resource_group: amplify-staging
+  script:
+    - NEXT_PUBLIC_APP_ENV=$CI_ENVIRONMENT_NAME sh scripts/amplify-deploy.sh main
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+smoke:staging:
+  extends: .smoke
+  stage: verify:staging
+  needs: [amplify:staging]
+  environment:
+    name: staging
+    action: access
+
+amplify:production:
+  extends: .amplify
+  stage: deploy:production
+  needs: [smoke:staging]
+  environment: production
+  resource_group: amplify-production
+  script:
+    - git push "https://oauth2:${GITLAB_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "${CI_COMMIT_SHA}:refs/heads/production"
+    - NEXT_PUBLIC_APP_ENV=$CI_ENVIRONMENT_NAME sh scripts/amplify-deploy.sh production
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+
+smoke:production:
+  extends: .smoke
+  stage: verify:production
+  needs: [amplify:production]
+  environment:
+    name: production
+    action: access
