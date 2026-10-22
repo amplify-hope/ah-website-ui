@@ -1,3 +1,9 @@
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - when: always
+
 stages:
   - test
   - build:staging
@@ -56,7 +62,7 @@ build:staging:
     - docker push agiannellah/ah-web-ui:latest-staging
     - docker push agiannellah/ah-web-ui:staging-${CI_COMMIT_SHORT_SHA}
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
 
 deploy:staging:
   stage: deploy:staging
@@ -82,7 +88,7 @@ deploy:staging:
       docker run --name amplify-hope-front-end --env-file ~/.env/.ah-ui.env -p 3000:3000 --restart unless-stopped -d agiannellah/ah-web-ui:staging-${CI_COMMIT_SHORT_SHA};
       docker image prune -af;"
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
 
 build:production:
   stage: build:production
@@ -106,7 +112,7 @@ build:production:
     - docker push agiannellah/ah-web-ui:latest-prod
     - docker push agiannellah/ah-web-ui:prod-${CI_COMMIT_SHORT_SHA}
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
 
 deploy:production:
   stage: deploy:production
@@ -133,7 +139,7 @@ deploy:production:
       docker run --name amplify-hope-front-end --env-file ~/.env/.ah-ui.env -p 3000:3000 --restart unless-stopped -d agiannellah/ah-web-ui:prod-${CI_COMMIT_SHORT_SHA};
       docker image prune -af;"
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
 
 .amplify:
   image: alpine:3.22
@@ -154,7 +160,7 @@ deploy:production:
   script:
     - sh scripts/smoke-test.sh "$SMOKE_URL"
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
 
 amplify:staging:
   extends: .amplify
@@ -163,9 +169,9 @@ amplify:staging:
   environment: staging
   resource_group: amplify-staging
   script:
-    - NEXT_PUBLIC_APP_ENV=$CI_ENVIRONMENT_NAME sh scripts/amplify-deploy.sh main
+    - NEXT_PUBLIC_APP_ENV=$CI_ENVIRONMENT_NAME sh scripts/amplify-deploy.sh develop
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
 
 smoke:staging:
   extends: .smoke
@@ -182,10 +188,10 @@ amplify:production:
   environment: production
   resource_group: amplify-production
   script:
-    - git push "https://oauth2:${GITLAB_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "${CI_COMMIT_SHA}:refs/heads/production"
-    - NEXT_PUBLIC_APP_ENV=$CI_ENVIRONMENT_NAME sh scripts/amplify-deploy.sh production
+    - git push "https://oauth2:${GITLAB_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "${CI_COMMIT_SHA}:refs/heads/main"
+    - NEXT_PUBLIC_APP_ENV=$CI_ENVIRONMENT_NAME sh scripts/amplify-deploy.sh main
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
       when: manual
 
 smoke:production:
