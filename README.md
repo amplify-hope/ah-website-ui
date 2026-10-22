@@ -34,15 +34,21 @@ yarn lint          # ESLint
 
 ## Deployment
 
-Deployed via GitLab CI (`.gitlab-ci.yml`). Pipelines are triggered on pushes to `main`.
+Deployed via GitLab CI (`.gitlab-ci.yml`). Cut feature branches from `develop` and merge them back into it; a merge to `develop` triggers the pipeline and deploys staging. `main` is the production branch and is managed by CI: the manual production job fast-forwards it to the commit that passed staging, so never push to it by hand.
 
-| Stage             | Trigger          | What it does                                           |
-| ----------------- | ---------------- | ------------------------------------------------------ |
-| test              | auto             | unit + integration tests, Snyk scan                    |
-| build:staging     | auto (main only) | Docker build with staging env vars, push to Docker Hub |
-| deploy:staging    | auto (main only) | SSH to stage EC2, pulls image, restarts container      |
-| build:production  | manual           | Docker build with prod env vars, push to Docker Hub    |
-| deploy:production | manual           | SSH to prod EC2, pulls image, restarts container       |
+The Amplify jobs deploy to AWS Amplify Hosting. The Docker and SSH jobs keep the old EC2 hosts current until the DNS cutover (WEB-26).
+
+| Stage              | Trigger                  | What it does                                                          |
+| ------------------ | ------------------------ | --------------------------------------------------------------------- |
+| test               | auto                     | unit + integration tests, Snyk scan                                   |
+| amplify:staging    | auto (develop only)      | Push variables to Amplify branch `develop`, build, wait for it        |
+| smoke:staging      | auto (develop only)      | GET `/api/products/one-time` on `SMOKE_URL`, expect 200               |
+| amplify:production | manual                   | Fast-forward `main` to this commit, build Amplify branch `main`, wait |
+| smoke:production   | after amplify:production | GET `/api/products/one-time` on `SMOKE_URL`, expect 200               |
+| build:staging      | auto (develop only)      | Docker build with staging env vars, push to Docker Hub                |
+| deploy:staging     | auto (develop only)      | SSH to stage EC2, pulls image, restarts container                     |
+| build:production   | manual                   | Docker build with prod env vars, push to Docker Hub                   |
+| deploy:production  | manual                   | SSH to prod EC2, pulls image, restarts container                      |
 
 Containers run with `--restart unless-stopped` so they survive EC2 reboots.
 

@@ -90,7 +90,7 @@ Tailwind CSS with a custom palette. Key custom colors: `ahBlue` (#0059a1), `ahGr
 
 ### Deployment
 
-GitLab CI pipeline: `test` → `build:staging` → `deploy:staging` (auto on `main`); `build:production` → `deploy:production` (manual). ESLint is suppressed during Next.js builds (`ignoreDuringBuilds: true` in `next.config.js`) — lint must pass in the `test` stage instead.
+GitLab CI pipeline, triggered by merges to `develop`: `test:unit` → `amplify:staging` (auto) → `smoke:staging` → `amplify:production` (manual) → `smoke:production`. Feature branches are cut from `develop`. `main` is the production branch and is managed by CI: `amplify:production` fast-forwards it to the tested commit before building Amplify `main`, so never push to it. The Docker and SSH jobs (`build:*`, `deploy:*`) stay until the DNS cutover. ESLint is suppressed during Next.js builds (`ignoreDuringBuilds: true` in `next.config.js`); lint runs in the pre-commit hook, not in CI.
 
 Each deploy job exits before stopping the running container if `~/.env/.ah-ui.env` is missing.
 
