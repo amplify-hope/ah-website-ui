@@ -13,7 +13,12 @@ const nextConfig = {
 const sentryWebpackPluginOptions = {
   org: 'amplifyhope',
   project: 'web-ui',
-  authToken: process.env.SENTRY_AUTH_TOKEN
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  release: { name: process.env.SENTRY_RELEASE },
+  unstable_sentryWebpackPluginOptions: {
+    errorHandler: err =>
+      console.warn(`Sentry upload failed, continuing: ${err.message}`)
+  }
 }
 
 module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions)

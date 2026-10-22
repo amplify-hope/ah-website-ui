@@ -5,7 +5,7 @@ set -eu
 BRANCH=${1:?usage: amplify-deploy.sh <amplify-branch>}
 : "${AMPLIFY_APP_ID:?}" "${AWS_REGION:?}"
 : "${NEXT_PUBLIC_APP_ENV:?}" "${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:?}" "${NEXT_PUBLIC_SENTRY_DSN:?}"
-: "${SENTRY_AUTH_TOKEN:?}" "${AH_SECRET_ID:?}" "${AH_AWS_REGION:?}"
+: "${SENTRY_AUTH_TOKEN:?}" "${AH_SECRET_ID:?}" "${AH_AWS_REGION:?}" "${CI_COMMIT_SHA:?}"
 
 TIMEOUT_SECONDS=${AMPLIFY_TIMEOUT_SECONDS:-1500}
 CONSOLE_URL="https://${AWS_REGION}.console.aws.amazon.com/amplify/apps/${AMPLIFY_APP_ID}/branches/${BRANCH}/deployments"
@@ -34,6 +34,7 @@ jq -n \
   --arg stripeKey "$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" \
   --arg sentryDsn "$NEXT_PUBLIC_SENTRY_DSN" \
   --arg sentryToken "$SENTRY_AUTH_TOKEN" \
+  --arg release "$CI_COMMIT_SHA" \
   --arg secretId "$AH_SECRET_ID" --arg region "$AH_AWS_REGION" \
   '{
     appId: $app,
@@ -43,6 +44,7 @@ jq -n \
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: $stripeKey,
       NEXT_PUBLIC_SENTRY_DSN: $sentryDsn,
       SENTRY_AUTH_TOKEN: $sentryToken,
+      SENTRY_RELEASE: $release,
       AH_SECRET_ID: $secretId,
       AH_AWS_REGION: $region
     }
