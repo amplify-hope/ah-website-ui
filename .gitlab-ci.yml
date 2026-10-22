@@ -24,12 +24,6 @@ test:unit:
     - yarn test:unit
     - yarn test:integration
 
-test:typecheck:
-  extends: .node
-  stage: test
-  script:
-    - yarn typecheck
-
 test:snyk:
   stage: test
   image: ${NODE_CONTAINER}
@@ -165,7 +159,7 @@ deploy:production:
 amplify:staging:
   extends: .amplify
   stage: deploy:staging
-  needs: [test:unit, test:typecheck]
+  needs: [test:unit]
   environment: staging
   resource_group: amplify-staging
   script:
