@@ -34,12 +34,7 @@ export type MagicLinkPayload = {
 
 // Anything req.json() can produce.
 export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue }
+  string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
 
 // What a Stripe API method is called with: an id or a params object.
 export type StripeArg = string | object
