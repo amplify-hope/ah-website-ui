@@ -1,3 +1,7 @@
+import type {
+  GetSecretValueCommand,
+  GetSecretValueCommandOutput
+} from '@aws-sdk/client-secrets-manager'
 import type * as Sentry from '@sentry/nextjs'
 import type { Resend } from 'resend'
 import type Stripe from 'stripe'
@@ -16,6 +20,15 @@ export type SecretFetcher = (
   secretId: string,
   region: string
 ) => Promise<RawEnv>
+
+// The part of the Secrets Manager client that fetchSecretJson uses, so a test
+// can pass a fake.
+export type SecretsClient = {
+  send: (
+    command: GetSecretValueCommand,
+    options?: { abortSignal?: AbortSignal }
+  ) => Promise<GetSecretValueCommandOutput>
+}
 
 export type Deps = {
   stripe: Stripe

@@ -28,7 +28,15 @@ const serverEnvSchema: yup.ObjectSchema<ServerEnv> = yup
   })
   .required()
 
-let cached: { loadedAt: number; env: Promise<ServerEnv> } | undefined
+// How soon to try again after a refresh failed and the previous values were
+// kept, so a blip at the TTL boundary neither fails requests nor waits out a
+// whole TTL.
+const REFRESH_RETRY_MS = 30 * 1000
+
+type CacheEntry = { loadedAt: number; env: Promise<ServerEnv> }
+
+let cached: CacheEntry | undefined
+let lastGood: ServerEnv | undefined
 
 const loadRawEnv = async (fetchSecret: SecretFetcher): Promise<RawEnv> => {
   const { AH_SECRET_ID, AH_AWS_REGION } = process.env
@@ -63,8 +71,25 @@ export const getServerEnv = (
 ): Promise<ServerEnv> => {
   if (cached && Date.now() - cached.loadedAt < CACHE_TTL_MS) return cached.env
 
-  const env = loadRawEnv(fetchSecret).then(parseServerEnv)
-  const entry = { loadedAt: Date.now(), env }
+  const previous = lastGood
+  const env = loadRawEnv(fetchSecret)
+    .then(parseServerEnv)
+    .then(
+      value => {
+        lastGood = value
+        return value
+      },
+      (err: unknown) => {
+        if (!previous) throw err
+        console.error(
+          'Server env refresh failed, keeping the previous values:',
+          err instanceof Error ? err.message : err
+        )
+        entry.loadedAt = Date.now() - CACHE_TTL_MS + REFRESH_RETRY_MS
+        return previous
+      }
+    )
+  const entry: CacheEntry = { loadedAt: Date.now(), env }
   cached = entry
   env.catch(() => {
     if (cached === entry) cached = undefined
@@ -74,4 +99,5 @@ export const getServerEnv = (
 
 export const resetServerEnvCache = (): void => {
   cached = undefined
+  lastGood = undefined
 }

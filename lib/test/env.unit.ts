@@ -144,5 +144,81 @@ describe('#serverEnv', () => {
       expect(await getServerEnv(fetchSecret)).to.deep.eq(validEnv)
       expect(calls).to.eq(2)
     })
+
+    describe('when a refresh fails after a good fetch', () => {
+      const realNow = Date.now
+      const realConsoleError = console.error
+      const MINUTE = 60 * 1000
+      let offset = 0
+
+      beforeEach(() => {
+        offset = 0
+        Date.now = () => realNow() + offset
+        console.error = () => undefined
+      })
+
+      afterEach(() => {
+        Date.now = realNow
+        console.error = realConsoleError
+      })
+
+      it('should keep serving the previous env instead of failing', async () => {
+        let calls = 0
+        const fetchSecret = async () => {
+          calls++
+          if (calls > 1) throw new Error('throttled')
+          return validEnv
+        }
+
+        await getServerEnv(fetchSecret)
+        offset = 6 * MINUTE
+
+        expect(await getServerEnv(fetchSecret)).to.deep.eq(validEnv)
+        expect(calls).to.eq(2)
+      })
+
+      it('should try again after a short wait, not a full TTL', async () => {
+        const rotated = { ...validEnv, JWT_SECRET: 'rotated' }
+        let calls = 0
+        const fetchSecret = async () => {
+          calls++
+          if (calls === 2) throw new Error('throttled')
+          return calls === 1 ? validEnv : rotated
+        }
+
+        await getServerEnv(fetchSecret)
+        offset = 6 * MINUTE
+        await getServerEnv(fetchSecret)
+        expect(calls).to.eq(2)
+
+        offset = 6 * MINUTE + 10 * 1000
+        expect(await getServerEnv(fetchSecret)).to.deep.eq(validEnv)
+        expect(calls).to.eq(2)
+
+        offset = 6 * MINUTE + 31 * 1000
+        expect(await getServerEnv(fetchSecret)).to.deep.eq(rotated)
+        expect(calls).to.eq(3)
+      })
+
+      it('should log the failure without exposing secret values', async () => {
+        const logged: string[] = []
+        console.error = (...args: Parameters<typeof console.error>) => {
+          logged.push(args.map(String).join(' '))
+        }
+        let calls = 0
+        const fetchSecret = async () => {
+          calls++
+          if (calls > 1) throw new Error('throttled')
+          return validEnv
+        }
+
+        await getServerEnv(fetchSecret)
+        offset = 6 * MINUTE
+        await getServerEnv(fetchSecret)
+
+        expect(logged.join('\n')).to.contain('throttled')
+        expect(logged.join('\n')).to.not.contain(validEnv.STRIPE_SECRET_KEY)
+      })
+    })
   })
 })
