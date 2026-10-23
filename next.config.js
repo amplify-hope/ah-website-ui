@@ -15,6 +15,9 @@ const sentryWebpackPluginOptions = {
   project: 'web-ui',
   authToken: process.env.SENTRY_AUTH_TOKEN,
   release: { name: process.env.SENTRY_RELEASE },
+  // Sentry keeps the maps it needs for readable stack traces; the copies in
+  // .next/static would otherwise be deployed and downloadable from the CDN.
+  sourcemaps: { deleteSourcemapsAfterUpload: true },
   unstable_sentryWebpackPluginOptions: {
     errorHandler: err =>
       console.warn(`Sentry upload failed, continuing: ${err.message}`)
