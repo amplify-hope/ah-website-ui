@@ -1,3 +1,7 @@
+import type {
+  GetSecretValueCommand,
+  GetSecretValueCommandOutput
+} from '@aws-sdk/client-secrets-manager'
 import type * as Sentry from '@sentry/nextjs'
 import type { Resend } from 'resend'
 import type Stripe from 'stripe'
@@ -17,6 +21,15 @@ export type SecretFetcher = (
   region: string
 ) => Promise<RawEnv>
 
+// The part of the Secrets Manager client that fetchSecretJson uses, so a test
+// can pass a fake.
+export type SecretsClient = {
+  send: (
+    command: GetSecretValueCommand,
+    options?: { abortSignal?: AbortSignal }
+  ) => Promise<GetSecretValueCommandOutput>
+}
+
 export type Deps = {
   stripe: Stripe
   env: ServerEnv
@@ -34,12 +47,7 @@ export type MagicLinkPayload = {
 
 // Anything req.json() can produce.
 export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue }
+  string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
 
 // What a Stripe API method is called with: an id or a params object.
 export type StripeArg = string | object

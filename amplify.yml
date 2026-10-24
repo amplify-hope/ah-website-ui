@@ -9,6 +9,9 @@ frontend:
       commands:
         - env | grep -e '^AH_' >> .env.production
         - yarn build
+        # Sentry has already uploaded the maps it needs inside `yarn build`.
+        # Its own cleanup skips CSS maps, and does nothing without a token.
+        - find .next/static -name '*.map' -delete
   artifacts:
     baseDirectory: .next
     files:

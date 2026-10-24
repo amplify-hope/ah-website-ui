@@ -31,7 +31,7 @@ cp .env.example .env.local  # fill values from a teammate
 
 ## Architecture
 
-**Next.js 15 App Router** frontend for the Amplify Hope donation platform. React 19, TypeScript, Tailwind CSS, deployed via Docker to EC2.
+**Next.js 15 App Router** frontend for the Amplify Hope donation platform. React 19, TypeScript, Tailwind CSS, deployed on AWS Amplify Hosting (SSR compute). The old Docker/EC2 hosts only remain as a rollback until they are decommissioned (WEB-27).
 
 ### Directory layout
 
@@ -86,12 +86,14 @@ Tailwind CSS with a custom palette. Key custom colors: `ahBlue` (#0059a1), `ahGr
 
 ### Environment variables
 
-`NEXT_PUBLIC_*` variables are baked into the Docker image at build time, so staging and production require separate builds. Server-only variables (`STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`) are validated in `lib/env.ts` and read per request: `.env.local` locally, `~/.env/.ah-ui.env` on the EC2 hosts (`--env-file`, `KEY=value`, no quotes).
+`NEXT_PUBLIC_*` variables are inlined at build time, so staging and production are separate builds: each deploy job (`scripts/amplify-deploy.sh`) pushes them from the GitLab CI variables to its Amplify branch with `update-branch`, which replaces the whole variable map. Server-only variables (`STRIPE_SECRET_KEY`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_TEMPLATE_ID`, `CLIENT_BASE_URL`) are validated in `lib/env.ts` and read per request: `.env.local` locally; on Amplify from the Secrets Manager secret named by `AH_SECRET_ID` (`ah-website/staging`, `ah-website/production`), fetched by `lib/secrets.ts` through a per-branch compute role. The secret is cached for 5 minutes. If a refresh fails after a good fetch, the previous values stay in use and the refresh is retried after 30 seconds. `AH_SECRET_ID` and `AH_AWS_REGION` reach the runtime because `amplify.yml` copies the `AH_` variables into `.env.production`. The legacy EC2 hosts read `~/.env/.ah-ui.env` (`--env-file`, `KEY=value`, no quotes) until they are decommissioned.
 
 ### Deployment
 
-GitLab CI pipeline, triggered by merges to `develop`: `test:unit` → `amplify:staging` (auto) → `smoke:staging` → `amplify:production` (manual) → `smoke:production`. Feature branches are cut from `develop`. `main` is the production branch and is managed by CI: `amplify:production` fast-forwards it to the tested commit before building Amplify `main`, so never push to it. The Docker and SSH jobs (`build:*`, `deploy:*`) stay until the DNS cutover. ESLint is suppressed during Next.js builds (`ignoreDuringBuilds: true` in `next.config.js`); lint runs in the pre-commit hook, not in CI.
+GitLab CI pipeline, triggered by merges to `develop`: `test:unit` → `amplify:staging` (auto) → `smoke:staging` → `amplify:production` (manual) → `smoke:production`. Feature branches are cut from `develop`. `main` is the production branch and is managed by CI: `amplify:production` fast-forwards it to the tested commit before building Amplify `main`, so never push to it. The Docker and SSH jobs (`build:*`, `deploy:*`) stay as the rollback path until the soak ends (WEB-26 F8); the domains already point at Amplify. ESLint is suppressed during Next.js builds (`ignoreDuringBuilds: true` in `next.config.js`); lint runs in the pre-commit hook, not in CI.
 
 Each deploy job exits before stopping the running container if `~/.env/.ah-ui.env` is missing.
 
-Sentry is configured for error tracking with 10% trace sampling. Source maps are uploaded via the Sentry webpack plugin using `SENTRY_AUTH_TOKEN`. Server-side Sentry loads from `instrumentation.ts` (keyed on `NEXT_RUNTIME`). `withErrorHandling` reports caught errors with `Sentry.captureException`, since Next's `onRequestError` never sees them. `lib/sentry.ts` holds the shared options and strips request bodies, cookies, query strings and user info from events, because these routes handle donor emails. Events carry `NEXT_PUBLIC_APP_ENV` as the environment.
+Sentry is configured for error tracking with 10% trace sampling. Source maps are uploaded via the Sentry webpack plugin using `SENTRY_AUTH_TOKEN`, then deleted so they are not served: Sentry's own cleanup removes the JS maps and `amplify.yml` deletes every map under `.next/static` after the build. Server-side Sentry loads from `instrumentation.ts` (keyed on `NEXT_RUNTIME`). `withErrorHandling` reports caught errors with `Sentry.captureException`, since Next's `onRequestError` never sees them, and awaits `Sentry.flush` before returning because Amplify compute freezes the instance once the response is sent. `lib/sentry.ts` holds the shared options and strips request bodies, cookies, query strings and user info from events, because these routes handle donor emails. It also strips query strings from breadcrumbs, span descriptions and attributes: looking up a donor sends their email to Stripe as a query string, and the `/auth/verify` page URL carries it too. Session replay is off, because replay events never pass through `beforeSend`. Events carry `NEXT_PUBLIC_APP_ENV` as the environment.
+
+`next.config.js` sets baseline security headers (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, and a short `Strict-Transport-Security` with no `includeSubDomains`). There is no Content-Security-Policy yet (WEB-32).

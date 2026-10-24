@@ -135,10 +135,24 @@ Swaps the branch roles before the WEB-26 DNS cutover, so `main` means "what is l
 - [x] I3. Widen AWS first: the OIDC trust policy on `ah-website-ci-deploy` accepts `ref:main` and `ref:develop`, and its inline policy covers `branches/develop`, `main` and `production`
 - [x] I4. Create the Amplify `develop` branch with `ah-website-compute-staging`, `Next.js - SSR`, stage BETA, auto-build off
 - [x] I5. One commit to `.gitlab-ci.yml`: the seven `develop` rule guards, `amplify:staging` builds Amplify `develop`, `amplify:production` pushes to `refs/heads/main` and builds Amplify `main`, and a `workflow:` rule never runs a pipeline on `main`
-- [x] I6. `SMOKE_URL` points at `develop.d3504c7prom3aa.amplifyapp.com` (staging) and `main.d3504c7prom3aa.amplifyapp.com` (production)
+- [x] I6. `SMOKE_URL` pointed at `develop.d3504c7prom3aa.amplifyapp.com` (staging) and `main.d3504c7prom3aa.amplifyapp.com` (production) so both could be verified before the domains moved. After the cutover (F6) it holds `stage.amplifyhope.cc` and `amplifyhope.cc`
 - [x] I7. Verify staging first, then recreate production. Staging on Amplify `develop` was verified (200, `pk_test_`, `staging`, release = commit SHA) before Amplify `main` was deleted and recreated with `ah-website-compute-production` and stage PRODUCTION. Recreated rather than changed in place, so the old staging bundle could never read the production secret. The production job then fast-forwarded `main` and Amplify `main` served 200 with `pk_live_`, `production` and the commit SHA as its release
 - [ ] I8. Docs: README, CLAUDE.md and this plan are done; Jira and the Confluence pages (parent and WEB-26 child) are pending
 - [ ] I9. Cleanup, deferred until at least one real production release has gone through the new path. Until the Amplify `production` branch is deleted, it is the way to redeploy the last good production build by hand. Then: narrow the trust policy to `ref:develop`, drop `branches/production` from the CI policy, delete the Amplify `production` and `web-26/runtime-secrets` branches, and unprotect and delete the git `production` branch
+
+### [WEB-30] Post-cutover hardening
+
+Fixes for what a review after the cutover found: defects from moving a long-lived container workload onto Lambda-backed compute, plus exposure that was always there and is now easy to reach. Items J1–J5, J7 and J9 are committed on `web-30/post-cutover-hardening` and still need verifying on staging; none is ticked until it has been.
+
+- [ ] J1. Flush Sentry before returning from a failed API request. Amplify compute freezes the instance once the response is sent, so a queued event could be lost, and `withErrorHandling` is the only path that reports handler errors. A failed flush no longer masks the original error, and the stack is logged
+- [ ] J2. Time out Secrets Manager calls and keep the last good secrets. Connection and socket timeouts, three attempts and a five second deadline for the whole call, one client per region. If a refresh fails after a good fetch, the previous values stay in use and the refresh is retried after thirty seconds
+- [ ] J3. Give the smoke test connect and total timeouts and follow redirects, and drop the sleep after the last attempt
+- [ ] J4. Stop publishing client source maps: Sentry's `deleteSourcemapsAfterUpload`, plus a `find … -delete` after `yarn build` in `amplify.yml` because Sentry's cleanup skips CSS maps
+- [ ] J5. Session replay off, and `scrubEvent` strips query strings from breadcrumbs, span descriptions and attributes, and the trace context. Looking up a donor sends their email to Stripe as a query string, which Sentry records as a span. Breadcrumbs are kept. Follow-up: stop putting the donor email in the `/auth/verify` URL, then replay could return with its default masking
+- [ ] J6. Delete the leftover Amplify branch `web-26/runtime-secrets` and the matching git branch
+- [ ] J7. Baseline security headers in `next.config.js`: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, and `Strict-Transport-Security` at `max-age=300` with no `includeSubDomains`; raise HSTS once nothing has broken. No CSP (WEB-32)
+- [ ] J8. A CloudWatch alarm on Amplify's `5xxErrors` metric into SNS, and an AWS Budget alert, to cover the error rate that UptimeRobot cannot see
+- [ ] J9. Docs: `CLAUDE.md` and `README.md` no longer describe EC2 and Docker as the live stack, the README no longer claims Google Analytics, and I6 above is corrected
 
 ## Risks & Mitigations
 
