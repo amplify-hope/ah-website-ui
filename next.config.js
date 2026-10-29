@@ -14,7 +14,6 @@ const securityHeaders = [
 ]
 
 const nextConfig = {
-  output: process.env.AWS_APP_ID ? undefined : 'standalone',
   eslint: {
     ignoreDuringBuilds: true
   },

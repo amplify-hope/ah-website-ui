@@ -6,16 +6,13 @@ workflow:
 
 stages:
   - test
-  - build:staging
   - deploy:staging
   - verify:staging
-  - build:production
   - deploy:production
   - verify:production
 
 variables:
   NODE_CONTAINER: node:24-alpine
-  DOCKER_CONTAINER: docker:24.0.7
 
 .node:
   image: ${NODE_CONTAINER}
@@ -41,107 +38,7 @@ test:snyk:
     - snyk code test
   allow_failure: true
 
-build:staging:
-  stage: build:staging
-  image: ${DOCKER_CONTAINER}
-  environment: staging
-  services:
-    - ${DOCKER_CONTAINER}-dind
-  before_script:
-    - echo ${DOCKER_HUB_TOKEN} | docker login -u agiannellah --password-stdin
-  script:
-    - docker build
-      -t agiannellah/ah-web-ui:latest-staging
-      -t agiannellah/ah-web-ui:staging-${CI_COMMIT_SHORT_SHA}
-      --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-      --build-arg NEXT_PUBLIC_GOOGLE_MEASUREMENT_ID=$NEXT_PUBLIC_GOOGLE_MEASUREMENT_ID
-      --build-arg NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
-      --build-arg SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
-      --build-arg APP_ENV=$CI_ENVIRONMENT_NAME
-      --build-arg NODE_ENV=production .
-    - docker push agiannellah/ah-web-ui:latest-staging
-    - docker push agiannellah/ah-web-ui:staging-${CI_COMMIT_SHORT_SHA}
-  rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
-
-deploy:staging:
-  stage: deploy:staging
-  image: alpine:latest
-  environment: staging
-  before_script:
-    - 'command -v ssh-agent >/dev/null || ( apk add --update openssh )'
-    - eval $(ssh-agent -s)
-    - echo "$EC2_SSH_KEY" | tr -d '\r' | ssh-add -
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - ssh-keyscan $EC2_HOST >> ~/.ssh/known_hosts
-    - chmod 644 ~/.ssh/known_hosts
-  script:
-    - ssh $EC2_USER@$EC2_HOST "
-      test -f ~/.env/.ah-ui.env || { echo 'missing ~/.env/.ah-ui.env'; exit 1; };
-      echo $DOCKER_HUB_TOKEN | docker login -u agiannellah --password-stdin;
-      docker pull agiannellah/ah-web-ui:staging-${CI_COMMIT_SHORT_SHA};
-      docker stop amplify-hope-front-end;
-      echo 'amplify-hope-ui container stopped';
-      docker rm amplify-hope-front-end;
-      echo 'amplify-hope-ui container removed';
-      docker run --name amplify-hope-front-end --env-file ~/.env/.ah-ui.env -p 3000:3000 --restart unless-stopped -d agiannellah/ah-web-ui:staging-${CI_COMMIT_SHORT_SHA};
-      docker image prune -af;"
-  rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
-
-build:production:
-  stage: build:production
-  image: ${DOCKER_CONTAINER}
-  when: manual
-  environment: production
-  services:
-    - ${DOCKER_CONTAINER}-dind
-  before_script:
-    - echo ${DOCKER_HUB_TOKEN} | docker login -u agiannellah --password-stdin
-  script:
-    - docker build
-      -t agiannellah/ah-web-ui:latest-prod
-      -t agiannellah/ah-web-ui:prod-${CI_COMMIT_SHORT_SHA}
-      --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-      --build-arg NEXT_PUBLIC_GOOGLE_MEASUREMENT_ID=$NEXT_PUBLIC_GOOGLE_MEASUREMENT_ID
-      --build-arg NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
-      --build-arg SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
-      --build-arg APP_ENV=$CI_ENVIRONMENT_NAME
-      --build-arg NODE_ENV=production .
-    - docker push agiannellah/ah-web-ui:latest-prod
-    - docker push agiannellah/ah-web-ui:prod-${CI_COMMIT_SHORT_SHA}
-  rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
-
-deploy:production:
-  stage: deploy:production
-  image: alpine:latest
-  when: manual
-  environment: production
-  before_script:
-    - 'command -v ssh-agent >/dev/null || ( apk add --update openssh )'
-    - eval $(ssh-agent -s)
-    - echo "$EC2_SSH_KEY" | tr -d '\r' | ssh-add -
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - ssh-keyscan $EC2_HOST >> ~/.ssh/known_hosts
-    - chmod 644 ~/.ssh/known_hosts
-  script:
-    - ssh $EC2_USER@$EC2_HOST "
-      test -f ~/.env/.ah-ui.env || { echo 'missing ~/.env/.ah-ui.env'; exit 1; };
-      echo $DOCKER_HUB_TOKEN | docker login -u agiannellah --password-stdin;
-      docker pull agiannellah/ah-web-ui:prod-${CI_COMMIT_SHORT_SHA};
-      docker stop amplify-hope-front-end;
-      echo 'amplify-hope-ui container stopped';
-      docker rm amplify-hope-front-end;
-      echo 'amplify-hope-ui container removed';
-      docker run --name amplify-hope-front-end --env-file ~/.env/.ah-ui.env -p 3000:3000 --restart unless-stopped -d agiannellah/ah-web-ui:prod-${CI_COMMIT_SHORT_SHA};
-      docker image prune -af;"
-  rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
-
-.amplify:
+.deploy:
   image: alpine:3.22
   id_tokens:
     GITLAB_OIDC_TOKEN:
@@ -162,8 +59,8 @@ deploy:production:
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
-amplify:staging:
-  extends: .amplify
+deploy:staging:
+  extends: .deploy
   stage: deploy:staging
   needs: [test:unit]
   environment: staging
@@ -176,13 +73,13 @@ amplify:staging:
 smoke:staging:
   extends: .smoke
   stage: verify:staging
-  needs: [amplify:staging]
+  needs: [deploy:staging]
   environment:
     name: staging
     action: access
 
-amplify:production:
-  extends: .amplify
+deploy:production:
+  extends: .deploy
   stage: deploy:production
   needs: [smoke:staging]
   environment: production
@@ -197,7 +94,7 @@ amplify:production:
 smoke:production:
   extends: .smoke
   stage: verify:production
-  needs: [amplify:production]
+  needs: [deploy:production]
   environment:
     name: production
     action: access
