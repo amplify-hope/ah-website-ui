@@ -1,5 +1,22 @@
 # Amplify Hope Website Release Notes
 
+## v2.10.0
+
+- Moved hosting from Docker containers on EC2 to AWS Amplify Hosting
+  - `amplifyhope.cc` and `stage.amplifyhope.cc` have been served from Amplify since the DNS cutover on 2026-10-23
+  - Server settings (Stripe, Resend and the sign-in secret) are read from AWS Secrets Manager, one secret per environment, instead of a file on the host
+  - The pipeline deploys with `deploy:staging` (automatic on `develop`) and `deploy:production` (manual), and only pipelines on `develop` can reach AWS
+  - Removed the Dockerfile, the Docker Hub build jobs and the SSH deploy jobs, and decommissioned the old EC2 hosts, the old API and its database
+- Sentry now keeps the errors it is meant to catch
+  - Events are sent before the response returns, because Amplify freezes the instance once it has responded
+  - Session replay is off, and query strings are removed from breadcrumbs, spans and trace data, since looking up a donor sends their email to Stripe as a query string
+  - Source maps are no longer downloadable from the site
+- Reading settings from Secrets Manager has timeouts and retries, and keeps the last good values if a refresh fails
+- Added baseline security headers: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` and a short `Strict-Transport-Security`
+- The smoke test now has timeouts and follows redirects
+- Added a CloudWatch alarm on server errors and an AWS Budget alert, both emailing the ops address
+- Updated CLAUDE.md and the README to describe the Amplify deployment
+
 ## v2.9.0
 
 - Request errors are now shown instead of failing silently
