@@ -8,6 +8,10 @@ const SENSITIVE_HEADERS = [
   'x-real-ip'
 ]
 
+// CloudFront adds the visitor's IP and port, city, coordinates and postal code
+// to every request, which is the same data x-forwarded-for would leak.
+const SENSITIVE_HEADER_PREFIXES = ['cloudfront-viewer-']
+
 type AttributeData = NonNullable<NonNullable<Event['spans']>[number]['data']>
 
 // Attributes that hold nothing but a query string (or fragment), so there is
@@ -75,7 +79,11 @@ export const scrubEvent = <T extends Event>(event: T): T => {
 
     if (request.headers) {
       for (const name of Object.keys(request.headers)) {
-        if (SENSITIVE_HEADERS.includes(name.toLowerCase())) {
+        const header = name.toLowerCase()
+        if (
+          SENSITIVE_HEADERS.includes(header) ||
+          SENSITIVE_HEADER_PREFIXES.some(prefix => header.startsWith(prefix))
+        ) {
           delete request.headers[name]
         }
       }
