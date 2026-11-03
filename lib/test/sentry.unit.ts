@@ -41,6 +41,27 @@ describe('#sentry', () => {
       })
     })
 
+    it('should remove the CloudFront viewer address and location headers', () => {
+      const event: Event = {
+        request: {
+          headers: {
+            'Cloudfront-Viewer-Address': '165.225.59.70:37818',
+            'Cloudfront-Viewer-City': 'Chicago',
+            'Cloudfront-Viewer-Latitude': '41.84830',
+            'Cloudfront-Viewer-Longitude': '-87.65170',
+            'Cloudfront-Viewer-Postal-Code': '60602',
+            'Cloudfront-Forwarded-Proto': 'https',
+            'user-agent': 'mocha'
+          }
+        }
+      }
+
+      expect(scrubEvent(event).request?.headers).to.deep.eq({
+        'Cloudfront-Forwarded-Proto': 'https',
+        'user-agent': 'mocha'
+      })
+    })
+
     it('should drop a url that cannot be parsed', () => {
       const event: Event = { request: { url: 'not a url' } }
 
