@@ -7,10 +7,10 @@ const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'X-Frame-Options', value: 'DENY' },
-  // Browsers remember HSTS, so a mistake outlives a rollback. Raise this once
-  // nothing has broken. Leave out includeSubDomains: it would also bind
-  // login.amplifyhope.cc (Okta), mail, drive and api.
-  { key: 'Strict-Transport-Security', value: 'max-age=300' }
+  // Browsers remember HSTS, so a mistake outlives a rollback. Leave out
+  // includeSubDomains: it would also bind login.amplifyhope.cc (Okta), mail,
+  // drive and api. Leave out preload for the same reason.
+  { key: 'Strict-Transport-Security', value: 'max-age=31536000' }
 ]
 
 const nextConfig = {

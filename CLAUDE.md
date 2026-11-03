@@ -103,7 +103,7 @@ Tailwind CSS with a custom palette. Key custom colors: `ahBlue` (#0059a1), `ahGr
 - **`main`** is the production branch and is managed by CI: `deploy:production` fast-forwards it to the tested commit before building Amplify `main`, so never push to it
 - **Rollback goes forward:** revert on a branch off `develop`, merge, then run `deploy:production`. Re-running an older pipeline's production job fails because the push to `main` must be a fast-forward, and `aws amplify start-job` only rebuilds the current head of `main`. There is no separate fallback host
 - ESLint is suppressed during Next.js builds (`ignoreDuringBuilds: true` in `next.config.js`); lint runs in the pre-commit hook, not in CI
-- `next.config.js` sets baseline security headers (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, and a short `Strict-Transport-Security` with no `includeSubDomains`). There is no Content-Security-Policy yet (WEB-32)
+- `next.config.js` sets baseline security headers (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, and a one-year `Strict-Transport-Security` with no `includeSubDomains` or `preload`). There is no Content-Security-Policy yet (WEB-32)
 
 ### Error tracking (Sentry)
 
