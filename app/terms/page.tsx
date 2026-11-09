@@ -33,7 +33,7 @@ export default function Terms() {
           to use it for the organization&apos;s own finance work.
         </li>
         <li>
-          Access is through Okta. Staff must not share access or use the
+          Access is through SSO. Staff must not share access or use the
           dashboard for any other purpose.
         </li>
         <li>

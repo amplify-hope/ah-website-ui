@@ -37,7 +37,7 @@ export default function Privacy() {
       <h2>Our internal finance dashboard</h2>
       <p>
         Amplify Hope runs a private dashboard for finance staff only. It is not
-        open to the public and has no customer accounts. Access is through Okta
+        open to the public and has no customer accounts. Access is through SSO
         and limited to one finance group.
       </p>
       <ul>
@@ -76,14 +76,14 @@ export default function Privacy() {
       <h2>Your choices</h2>
       <p>
         To ask what we hold about you, or to ask us to correct or delete it,
-        contact us at the address below. We may need to keep some records, such
-        as donation receipts, to meet legal and accounting obligations.
+        contact us using the details below. We may need to keep some records,
+        such as donation receipts, to meet legal and accounting obligations.
       </p>
 
       <h2>Contact</h2>
       <p>
-        Amplify Hope, 7635 W 148th St #308, Apple Valley, MN 55124.
-        {/* TODO(owner): add a privacy contact email before approval */}
+        Email <a href='mailto:info@amplifyhope.cc'>info@amplifyhope.cc</a> or
+        write to Amplify Hope, 7635 W 148th St #308, Apple Valley, MN 55124.
       </p>
     </LegalPage>
   )
