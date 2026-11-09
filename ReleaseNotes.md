@@ -1,5 +1,9 @@
 # Amplify Hope Website Release Notes
 
+## v2.11.0
+
+- Added public Privacy Policy (`/privacy`) and Terms of Use (`/terms`) pages, linked from the footer, and a sitemap at `/sitemap.xml`
+
 ## v2.10.0
 
 - Moved hosting from Docker containers on EC2 to AWS Amplify Hosting
