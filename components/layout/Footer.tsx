@@ -25,6 +25,12 @@ export const Footer = () => {
         <p className='font-bold text-xl'>About</p>
         <Link href='/who-we-are'>Who We Are</Link>
       </div>
+      <div className='text-white w-8/12 hidden md:inline'>
+        <p className='font-bold text-xl'>Legal</p>
+        <Link href='/privacy'>Privacy</Link>
+        <span aria-hidden> · </span>
+        <Link href='/terms'>Terms</Link>
+      </div>
       <div className='w-10/12 md:w-auto'>
         <img
           src='/images/logo-linear-white.svg'
@@ -38,6 +44,11 @@ export const Footer = () => {
             non-profit,
           </p>
           <p>EIN 87-2385986</p>
+          <p className='md:hidden'>
+            <Link href='/privacy'>Privacy</Link>
+            <span aria-hidden> · </span>
+            <Link href='/terms'>Terms</Link>
+          </p>
         </div>
       </div>
     </footer>
