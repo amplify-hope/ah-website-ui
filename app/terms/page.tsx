@@ -57,10 +57,11 @@ export default function Terms() {
       <h2>Changes and contact</h2>
       <p>
         We may update these terms and will change the date above when we do.
-        Questions can be sent to Amplify Hope, 7635 W 148th St #308, Apple
-        Valley, MN 55124.
-        {/* TODO(owner): add a contact email, governing law and any
-            liability limits before approval */}
+        Questions can be sent to{' '}
+        <a href='mailto:info@amplifyhope.cc'>info@amplifyhope.cc</a> or to
+        Amplify Hope, 7635 W 148th St #308, Apple Valley, MN 55124.
+        {/* TODO(owner): add governing law and any liability limits before
+            approval */}
       </p>
     </LegalPage>
   )
