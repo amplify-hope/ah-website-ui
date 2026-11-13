@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+`HANDOFF.md` holds the context this file does not: why certain decisions stand, what is still owed, and the AWS access trap worth knowing before any write.
+
 ## Commands
 
 ```bash
