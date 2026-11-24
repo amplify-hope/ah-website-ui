@@ -6,7 +6,11 @@
     },
     "atlassian-amplifyhope": {
       "type": "http",
-      "url": "https://mcp.atlassian.com/v1/mcp/authv2"
+      "url": "https://mcp.atlassian.com/v2/mcp"
+    },
+    "sentry-amplifyhope": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp"
     }
   }
 }
